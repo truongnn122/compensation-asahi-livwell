@@ -33,7 +33,7 @@ export function AppSidebar({
             >
               <Link href="/dashboard">
                 <Command />
-                <span className="text-base font-semibold">Compasation</span>
+                <span className="text-base font-semibold">Compensation</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

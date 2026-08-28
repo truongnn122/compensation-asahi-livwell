@@ -24,8 +24,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Compasation",
-  description: "Compasation Asahi Livwel",
+  title: "Compensation",
+  description: "Compensation Asahi Livwell",
 };
 
 export default async function RootLayout({
