@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { IconDotsVertical, IconMoon, IconSun } from "@tabler/icons-react";
+import { useRouter } from "next/navigation";
+
+import { signOut } from "firebase/auth";
+import {
+  IconDotsVertical,
+  IconLogout,
+  IconMoon,
+  IconSun,
+} from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -27,9 +35,12 @@ import { getInitials } from "@/lib/utils";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 import { updateThemeMode } from "@/lib/theme-utils";
 import { setValueToCookie } from "@/server/server-actions";
+import { endSession } from "@/server/auth-actions";
+import { auth } from "@/lib/firebase/client";
 
 export function NavUser({ user }: { user: TUser }) {
   const { isMobile } = useSidebar();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const initials = getInitials(user.name);
 
@@ -41,6 +52,12 @@ export function NavUser({ user }: { user: TUser }) {
     updateThemeMode(updatedTheme);
     setThemeMode(updatedTheme);
     await setValueToCookie("theme_mode", updatedTheme);
+  };
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    await endSession();
+    router.push("/login");
   };
 
   useEffect(() => {
@@ -149,6 +166,11 @@ export function NavUser({ user }: { user: TUser }) {
                 </DropdownMenuPortal>
               </DropdownMenuSub>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut}>
+              <IconLogout className="size-4" />
+              Sign out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

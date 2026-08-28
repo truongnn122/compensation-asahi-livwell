@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { Separator } from "@/components/ui/separator";
 import {
@@ -21,14 +22,26 @@ import {
 } from "@/types/preferences/layout";
 
 import { getPreference } from "@/server/server-actions";
+import { getSessionUser } from "@/lib/firebase/session";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SearchDialog } from "@/components/search-dialog";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LayoutControls } from "@/components/layout-controls";
+import { AuthStoreProvider } from "@/stores/auth/auth-provider";
 
 export default async function Layout({
   children,
 }: Readonly<{ children: ReactNode }>) {
+  const sessionUser = await getSessionUser();
+  if (!sessionUser) redirect("/login");
+
+  const user: TUser = {
+    uid: sessionUser.uid,
+    name: sessionUser.name ?? sessionUser.email?.split("@")[0] ?? "User",
+    email: sessionUser.email ?? "",
+    avatar: sessionUser.picture,
+  };
+
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
@@ -69,40 +82,41 @@ export default async function Layout({
         } as React.CSSProperties
       }
     >
-      <AppSidebar
-        variant={sidebarVariant}
-        collapsible={sidebarCollapsible}
-        user={{
-          name: "User",
-          email: "",
-        }}
-      />
-      <SidebarInset data-content-layout={contentLayout}>
-        <header
-          data-navbar-style={navbarStyle}
-          className={cn(
-            "flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12",
-            // Handle sticky navbar style with conditional classes so blur, background, z-index, and rounded corners remain consistent across all SidebarVariant layouts.
-            "data-[navbar-style=sticky]:bg-background/50 data-[navbar-style=sticky]:sticky data-[navbar-style=sticky]:top-0 data-[navbar-style=sticky]:z-50 data-[navbar-style=sticky]:overflow-hidden data-[navbar-style=sticky]:rounded-t-[inherit] data-[navbar-style=sticky]:backdrop-blur-md"
-          )}
-        >
-          <div className="flex w-full items-center justify-between px-4 lg:px-6">
-            <div className="flex items-center gap-1 lg:gap-2">
-              <SidebarTrigger className="-ml-1" />
-              <Separator
-                orientation="vertical"
-                className="mx-2 data-[orientation=vertical]:h-4"
-              />
-              <SearchDialog />
+      <AuthStoreProvider
+        initialUser={{ uid: user.uid, email: sessionUser.email }}
+      >
+        <AppSidebar
+          variant={sidebarVariant}
+          collapsible={sidebarCollapsible}
+          user={user}
+        />
+        <SidebarInset data-content-layout={contentLayout}>
+          <header
+            data-navbar-style={navbarStyle}
+            className={cn(
+              "flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12",
+              // Handle sticky navbar style with conditional classes so blur, background, z-index, and rounded corners remain consistent across all SidebarVariant layouts.
+              "data-[navbar-style=sticky]:bg-background/50 data-[navbar-style=sticky]:sticky data-[navbar-style=sticky]:top-0 data-[navbar-style=sticky]:z-50 data-[navbar-style=sticky]:overflow-hidden data-[navbar-style=sticky]:rounded-t-[inherit] data-[navbar-style=sticky]:backdrop-blur-md"
+            )}
+          >
+            <div className="flex w-full items-center justify-between px-4 lg:px-6">
+              <div className="flex items-center gap-1 lg:gap-2">
+                <SidebarTrigger className="-ml-1" />
+                <Separator
+                  orientation="vertical"
+                  className="mx-2 data-[orientation=vertical]:h-4"
+                />
+                <SearchDialog />
+              </div>
+              <div className="flex items-center gap-2">
+                <LayoutControls {...layoutPreferences} />
+                <ThemeSwitcher />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <LayoutControls {...layoutPreferences} />
-              <ThemeSwitcher />
-            </div>
-          </div>
-        </header>
-        <div className="h-full p-4 md:p-6">{children}</div>
-      </SidebarInset>
+          </header>
+          <div className="h-full p-4 md:p-6">{children}</div>
+        </SidebarInset>
+      </AuthStoreProvider>
     </SidebarProvider>
   );
 }
