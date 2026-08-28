@@ -100,12 +100,12 @@ yarn add firebase firebase-admin server-only
 ```
 # ── Firebase Client SDK (public — safe to expose to the browser) ──────────
 # Firebase Console → Project settings → General → "Your apps" → SDK setup and configuration
-NEXT_PUBLIC_FIREBASE_API_KEY=REPLACE_ME
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=REPLACE_ME.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=REPLACE_ME
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=REPLACE_ME.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=REPLACE_ME
-NEXT_PUBLIC_FIREBASE_APP_ID=REPLACE_ME
+FIREBASE_API_KEY=REPLACE_ME
+FIREBASE_AUTH_DOMAIN=REPLACE_ME.firebaseapp.com
+FIREBASE_PROJECT_ID=REPLACE_ME
+FIREBASE_STORAGE_BUCKET=REPLACE_ME.appspot.com
+FIREBASE_MESSAGING_SENDER_ID=REPLACE_ME
+FIREBASE_APP_ID=REPLACE_ME
 
 # ── Firebase Admin SDK (server-only secret — never expose to the client) ──
 # Firebase Console → Project settings → Service accounts → Generate new private key
