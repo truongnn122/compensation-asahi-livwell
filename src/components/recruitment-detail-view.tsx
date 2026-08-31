@@ -156,6 +156,7 @@ export function RecruitmentDetailView({
       </div>
 
       <RecruitmentFormFields
+        t={t}
         control={control}
         register={register}
         errors={errors}

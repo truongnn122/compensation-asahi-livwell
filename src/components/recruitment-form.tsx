@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import { RecruitmentFormFields } from "@/components/recruitment-form-fields";
-import { useDictionary } from "@/hooks/use-dictionary";
+import { vi } from "@/lib/i18n/dictionaries/vi";
 import { submitRecruitmentForm } from "@/server/recruitment-actions";
 import type { TManagerOption } from "@/server/user-actions";
 import {
@@ -16,13 +16,16 @@ import {
   type RecruitmentValues,
 } from "@/lib/validations/recruitment";
 
+// The public application form is always in Vietnamese, regardless of the
+// site-wide language preference used by the authenticated admin/AD pages.
+const t = vi;
+
 export function RecruitmentForm({ managers }: { managers: TManagerOption[] }) {
-  const t = useDictionary();
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const schema = useMemo(
     () => buildRecruitmentSchema(t.recruitmentForm.validation),
-    [t]
+    []
   );
   const {
     register,
@@ -45,7 +48,7 @@ export function RecruitmentForm({ managers }: { managers: TManagerOption[] }) {
 
   const onSubmit = async (values: RecruitmentValues) => {
     setFormError(null);
-    const result = await submitRecruitmentForm(values);
+    const result = await submitRecruitmentForm(values, "vi");
     if (!result.ok) {
       setFormError(result.error);
       return;
@@ -69,12 +72,14 @@ export function RecruitmentForm({ managers }: { managers: TManagerOption[] }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
       <RecruitmentFormFields
+        t={t}
         control={control}
         register={register}
         errors={errors}
         watch={watch}
         setValue={setValue}
         managers={managers}
+        locale="vi"
       />
 
       <FieldError>{formError}</FieldError>

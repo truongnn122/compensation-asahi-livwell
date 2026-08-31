@@ -11,6 +11,7 @@ import {
   buildRecruitmentSchema,
   type RecruitmentValues,
 } from "@/lib/validations/recruitment";
+import type { Language } from "@/types/preferences/language";
 
 const COLLECTION = "recruitment_submissions";
 const STATUS_VALUES = ["new", "contacted", "hired", "rejected"] as const;
@@ -54,9 +55,10 @@ export type TAttachment = {
 };
 
 export async function uploadRecruitmentAttachment(
-  formData: FormData
+  formData: FormData,
+  locale?: Language
 ): Promise<ActionResult<TAttachment>> {
-  const dict = await getDictionary();
+  const dict = await getDictionary(locale);
   const file = formData.get("file");
   if (!(file instanceof File)) {
     return { ok: false, error: dict.errors.recruitment.noFileSelected };
@@ -87,9 +89,10 @@ export async function uploadRecruitmentAttachment(
 }
 
 export async function submitRecruitmentForm(
-  values: RecruitmentValues
+  values: RecruitmentValues,
+  locale?: Language
 ): Promise<ActionResult<{ id: string }>> {
-  const dict = await getDictionary();
+  const dict = await getDictionary(locale);
   const schema = buildRecruitmentSchema(dict.recruitmentForm.validation);
   const parsed = schema.safeParse(values);
   if (!parsed.success) {

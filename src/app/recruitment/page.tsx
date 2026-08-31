@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 
-import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { vi } from "@/lib/i18n/dictionaries/vi";
 import { RecruitmentForm } from "@/components/recruitment-form";
 import { listRecruitmentManagers } from "@/server/user-actions";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const dict = await getDictionary();
-  return { title: dict.pages.recruitmentPublic.title };
-}
+// The public application form is always in Vietnamese, regardless of the
+// site-wide language preference used by the authenticated admin/AD pages.
+const dict = vi;
+
+export const metadata: Metadata = {
+  title: dict.pages.recruitmentPublic.title,
+};
 
 export default async function RecruitmentPage() {
-  const dict = await getDictionary();
   const result = await listRecruitmentManagers();
   const managers = result.ok ? result.data : [];
 

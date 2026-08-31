@@ -38,7 +38,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useDictionary } from "@/hooks/use-dictionary";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { formatBytes } from "@/lib/utils";
 import {
@@ -47,6 +46,7 @@ import {
 } from "@/server/recruitment-actions";
 import type { TManagerOption } from "@/server/user-actions";
 import type { RecruitmentValues } from "@/lib/validations/recruitment";
+import type { Language } from "@/types/preferences/language";
 
 function SectionCard({
   number,
@@ -93,6 +93,7 @@ function getOpenQuestions(
 }
 
 export function RecruitmentFormFields({
+  t,
   control,
   register,
   errors,
@@ -100,7 +101,9 @@ export function RecruitmentFormFields({
   setValue,
   managers,
   onDownloadAttachment,
+  locale,
 }: {
+  t: Dictionary;
   control: Control<RecruitmentValues>;
   register: UseFormRegister<RecruitmentValues>;
   errors: FieldErrors<RecruitmentValues>;
@@ -108,8 +111,8 @@ export function RecruitmentFormFields({
   setValue: UseFormSetValue<RecruitmentValues>;
   managers: TManagerOption[];
   onDownloadAttachment?: (attachment: TAttachment) => void;
+  locale?: Language;
 }) {
-  const t = useDictionary();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -193,7 +196,7 @@ export function RecruitmentFormFields({
       for (const file of files) {
         const formData = new FormData();
         formData.set("file", file);
-        const result = await uploadRecruitmentAttachment(formData);
+        const result = await uploadRecruitmentAttachment(formData, locale);
         if (!result.ok) {
           setUploadError(result.error);
           continue;
