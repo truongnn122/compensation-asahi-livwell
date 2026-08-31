@@ -48,6 +48,14 @@ export const THEME_PRESET_OPTIONS = [
       dark: "oklch(0.64 0.17 36.44)",
     },
   },
+  {
+    label: "Asahi Livwell",
+    value: "asahi-livwell",
+    primary: {
+      light: "oklch(0.283 0.121 260.9)",
+      dark: "oklch(0.610 0.211 261.3)",
+    },
+  },
 ] as const;
 
 export const THEME_PRESET_VALUES = THEME_PRESET_OPTIONS.map(p => p.value);

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Noto_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -13,8 +13,8 @@ import {
 import { getPreference } from "@/server/server-actions";
 import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const notoSans = Noto_Sans({
+  variable: "--font-noto-sans",
   subsets: ["latin"],
 });
 
@@ -41,7 +41,7 @@ export default async function RootLayout({
   const themePreset = await getPreference<ThemePreset>(
     "theme_preset",
     THEME_PRESET_VALUES,
-    "default"
+    "asahi-livwell"
   );
 
   return (
@@ -52,7 +52,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen  antialiased`}
+        className={`${notoSans.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}
       >
         <PreferencesStoreProvider
           themeMode={themeMode}
