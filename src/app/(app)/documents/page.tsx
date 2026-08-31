@@ -4,7 +4,7 @@ import { DocumentsView } from "@/components/documents-view";
 import { listDocuments } from "@/server/documents-actions";
 
 export const metadata: Metadata = {
-  title: "Tài liệu — Compensation",
+  title: "Tài liệu",
 };
 
 export default async function DocumentsPage() {

@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-
-import { Command } from "lucide-react";
+import Image from "next/image";
 
 import {
   Sidebar,
@@ -32,8 +31,14 @@ export function AppSidebar({
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <Link href="/dashboard">
-                <Command />
-                <span className="text-base font-semibold">Compensation</span>
+                <Image
+                  src="/brand/logo/ASAHI_SYMBOL.svg"
+                  alt=""
+                  width={39}
+                  height={33}
+                  className="size-5"
+                />
+                <span className="text-base font-semibold">Asahi Livwell</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

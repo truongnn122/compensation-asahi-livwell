@@ -24,7 +24,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Compensation",
+  title: {
+    default: "Asahi Livwell",
+    template: "Asahi Livwell - %s",
+  },
   description: "Compensation Asahi Livwell",
 };
 
