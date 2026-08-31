@@ -3,6 +3,8 @@
 import { randomUUID } from "crypto";
 
 import { adminDb, adminStorage } from "@/lib/firebase/admin";
+import { getSessionUser } from "@/lib/firebase/session";
+import { canAccessRecruitments } from "@/lib/permissions";
 import { ActionResult } from "@/lib/types";
 import {
   recruitmentSchema,
@@ -10,6 +12,26 @@ import {
 } from "@/lib/validations/recruitment";
 
 const COLLECTION = "recruitment_submissions";
+const STATUS_VALUES = ["new", "contacted", "hired", "rejected"] as const;
+export type TRecruitmentStatus = (typeof STATUS_VALUES)[number];
+
+export type TRecruitmentSubmission = RecruitmentValues & {
+  id: string;
+  submittedAt: string;
+  status: TRecruitmentStatus;
+};
+
+async function requireRecruitmentAccess() {
+  const user = await getSessionUser();
+  if (!user) return { ok: false as const, error: "Not authenticated." };
+  if (!canAccessRecruitments(user.role)) {
+    return {
+      ok: false as const,
+      error: "Bạn không có quyền thực hiện thao tác này.",
+    };
+  }
+  return { ok: true as const, user };
+}
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const ALLOWED_CONTENT_TYPES = [
   "image/jpeg",
@@ -75,6 +97,7 @@ export async function submitRecruitmentForm(
       .doc(id)
       .set({
         ...parsed.data,
+        status: "new" satisfies TRecruitmentStatus,
         submittedAt: new Date().toISOString(),
       });
 
@@ -84,5 +107,75 @@ export async function submitRecruitmentForm(
       ok: false,
       error: "Không thể gửi thông tin. Vui lòng thử lại sau.",
     };
+  }
+}
+
+export async function listRecruitmentSubmissions(): Promise<
+  ActionResult<TRecruitmentSubmission[]>
+> {
+  const check = await requireRecruitmentAccess();
+  if (!check.ok) return check;
+
+  try {
+    const snapshot = await adminDb
+      .collection(COLLECTION)
+      .orderBy("submittedAt", "desc")
+      .limit(200)
+      .get();
+
+    const submissions = snapshot.docs.map(
+      doc => ({ id: doc.id, ...doc.data() }) as TRecruitmentSubmission
+    );
+
+    return { ok: true, data: submissions };
+  } catch {
+    return { ok: false, error: "Không thể tải danh sách ứng viên." };
+  }
+}
+
+export async function updateRecruitmentSubmissionStatus(
+  id: string,
+  status: string
+): Promise<ActionResult> {
+  const check = await requireRecruitmentAccess();
+  if (!check.ok) return check;
+
+  if (!STATUS_VALUES.includes(status as TRecruitmentStatus)) {
+    return { ok: false, error: "Trạng thái không hợp lệ." };
+  }
+
+  try {
+    await adminDb.collection(COLLECTION).doc(id).update({ status });
+    return { ok: true, data: null };
+  } catch {
+    return { ok: false, error: "Không thể cập nhật trạng thái." };
+  }
+}
+
+export async function deleteRecruitmentSubmission(
+  id: string
+): Promise<ActionResult> {
+  const check = await requireRecruitmentAccess();
+  if (!check.ok) return check;
+
+  try {
+    const ref = adminDb.collection(COLLECTION).doc(id);
+    const doc = await ref.get();
+    const attachments =
+      (doc.data()?.attachments as TRecruitmentSubmission["attachments"]) ?? [];
+
+    await Promise.all(
+      attachments.map(a =>
+        adminStorage
+          .bucket()
+          .file(a.storagePath)
+          .delete({ ignoreNotFound: true })
+      )
+    );
+    await ref.delete();
+
+    return { ok: true, data: null };
+  } catch {
+    return { ok: false, error: "Không thể xóa hồ sơ ứng viên." };
   }
 }

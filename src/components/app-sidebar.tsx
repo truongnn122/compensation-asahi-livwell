@@ -15,12 +15,14 @@ import {
 
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
-import { sidebarItems } from "@/types/navigation/sidebar";
+import { getSidebarItems } from "@/types/navigation/sidebar";
+import type { Role } from "@/lib/permissions";
 
 export function AppSidebar({
   user,
+  role,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { user: TUser }) {
+}: React.ComponentProps<typeof Sidebar> & { user: TUser; role: Role }) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -45,7 +47,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={sidebarItems} />
+        <NavMain items={getSidebarItems(role)} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

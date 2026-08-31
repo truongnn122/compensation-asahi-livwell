@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
+import { getSessionUser } from "@/lib/firebase/session";
+import { canAccessDocuments } from "@/lib/permissions";
 import { DocumentsView } from "@/components/documents-view";
 import { listDocuments } from "@/server/documents-actions";
 
@@ -8,6 +11,11 @@ export const metadata: Metadata = {
 };
 
 export default async function DocumentsPage() {
+  const sessionUser = await getSessionUser();
+  if (!sessionUser || !canAccessDocuments(sessionUser.role)) {
+    redirect("/dashboard");
+  }
+
   const result = await listDocuments();
   const documents = result.ok ? result.data : [];
 

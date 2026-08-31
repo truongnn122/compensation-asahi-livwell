@@ -90,6 +90,7 @@ export default async function Layout({
           variant={sidebarVariant}
           collapsible={sidebarCollapsible}
           user={user}
+          role={sessionUser.role}
         />
         <SidebarInset
           data-content-layout={contentLayout}

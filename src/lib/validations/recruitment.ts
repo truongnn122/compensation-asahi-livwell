@@ -11,6 +11,8 @@ const recruitmentObjectSchema = z.object({
   mobile1: z.string().min(1, "Vui lòng nhập số điện thoại"),
   mobile2: z.string().optional(),
   email: z.email("Vui lòng nhập địa chỉ email hợp lệ"),
+  managerUid: z.string().min(1, "Vui lòng chọn tên quản lý"),
+  managerName: z.string().min(1, "Vui lòng chọn tên quản lý"),
 
   positionApplied: z.enum([
     "life_planner",
@@ -84,10 +86,14 @@ export const recruitmentSchema = recruitmentObjectSchema.superRefine(
     if (data.pepStatus !== "yes") return;
 
     const requiredWhenPep: {
-      field: "pepRelationship" | "pepFullName" | "pepPosition" | "pepOrganization";
+      field:
+        "pepRelationship" | "pepFullName" | "pepPosition" | "pepOrganization";
       message: string;
     }[] = [
-      { field: "pepRelationship", message: "Vui lòng nhập mối quan hệ với PEP" },
+      {
+        field: "pepRelationship",
+        message: "Vui lòng nhập mối quan hệ với PEP",
+      },
       { field: "pepFullName", message: "Vui lòng nhập họ và tên" },
       { field: "pepPosition", message: "Vui lòng nhập chức vụ" },
       { field: "pepOrganization", message: "Vui lòng nhập đơn vị công tác" },

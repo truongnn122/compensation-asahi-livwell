@@ -2,12 +2,16 @@ import type { Metadata } from "next";
 import Image from "next/image";
 
 import { RecruitmentForm } from "@/components/recruitment-form";
+import { listRecruitmentManagers } from "@/server/user-actions";
 
 export const metadata: Metadata = {
   title: "Phiếu thông tin tuyển dụng",
 };
 
-export default function RecruitmentPage() {
+export default async function RecruitmentPage() {
+  const result = await listRecruitmentManagers();
+  const managers = result.ok ? result.data : [];
+
   return (
     <div className="relative min-h-svh overflow-hidden">
       <video
@@ -47,7 +51,7 @@ export default function RecruitmentPage() {
           </div>
         </div>
 
-        <RecruitmentForm />
+        <RecruitmentForm managers={managers} />
       </main>
     </div>
   );

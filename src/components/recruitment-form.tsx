@@ -20,13 +20,20 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatBytes } from "@/lib/utils";
 import {
   submitRecruitmentForm,
   uploadRecruitmentAttachment,
 } from "@/server/recruitment-actions";
+import type { TManagerOption } from "@/server/user-actions";
 import {
   recruitmentSchema,
   type RecruitmentValues,
@@ -96,36 +103,39 @@ const TRAINING_OPTIONS = [
   },
 ] as const;
 
-const OPEN_QUESTIONS: { name: "q1" | "q2" | "q3" | "q4" | "q6"; label: string }[] =
-  [
-    {
-      name: "q1",
-      label:
-        "Trong cuộc sống, anh/chị đã từng thấy người thân hoặc người xung quanh nhận được quyền lợi từ bảo hiểm nhân thọ chưa?",
-    },
-    { name: "q2", label: "Anh/chị nhìn nhận như thế nào về bảo hiểm nhân thọ?" },
-    {
-      name: "q3",
-      label:
-        "Người thân, bạn bè sẽ nói gì nếu anh/chị trở thành tư vấn viên bảo hiểm nhân thọ?",
-    },
-    {
-      name: "q4",
-      label: "Ai là 10 người đầu tiên anh/chị sẽ trò chuyện về bảo hiểm nhân thọ?",
-    },
-    {
-      name: "q6",
-      label:
-        "Anh/chị mong MVI hỗ trợ gì để thành công, tăng thu nhập, có cơ hội thăng tiến, nâng cao kỹ năng và kiến thức?",
-    },
-  ];
+const OPEN_QUESTIONS: {
+  name: "q1" | "q2" | "q3" | "q4" | "q6";
+  label: string;
+}[] = [
+  {
+    name: "q1",
+    label:
+      "Trong cuộc sống, anh/chị đã từng thấy người thân hoặc người xung quanh nhận được quyền lợi từ bảo hiểm nhân thọ chưa?",
+  },
+  { name: "q2", label: "Anh/chị nhìn nhận như thế nào về bảo hiểm nhân thọ?" },
+  {
+    name: "q3",
+    label:
+      "Người thân, bạn bè sẽ nói gì nếu anh/chị trở thành tư vấn viên bảo hiểm nhân thọ?",
+  },
+  {
+    name: "q4",
+    label:
+      "Ai là 10 người đầu tiên anh/chị sẽ trò chuyện về bảo hiểm nhân thọ?",
+  },
+  {
+    name: "q6",
+    label:
+      "Anh/chị mong MVI hỗ trợ gì để thành công, tăng thu nhập, có cơ hội thăng tiến, nâng cao kỹ năng và kiến thức?",
+  },
+];
 
 const MAX_FILES = 5;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_TYPES =
   "image/jpeg,image/png,image/webp,image/heic,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-export function RecruitmentForm() {
+export function RecruitmentForm({ managers }: { managers: TManagerOption[] }) {
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -212,8 +222,8 @@ export function RecruitmentForm() {
       <div className="flex flex-col items-center gap-2 rounded-xl border bg-card p-10 text-center shadow-sm">
         <h2 className="text-xl font-semibold">Cảm ơn bạn!</h2>
         <p className="text-muted-foreground max-w-md text-sm">
-          Thông tin ứng tuyển của bạn đã được gửi thành công. Đội ngũ tuyển
-          dụng Asahi Livwell sẽ liên hệ với bạn trong thời gian sớm nhất.
+          Thông tin ứng tuyển của bạn đã được gửi thành công. Đội ngũ tuyển dụng
+          Asahi Livwell sẽ liên hệ với bạn trong thời gian sớm nhất.
         </p>
       </div>
     );
@@ -230,13 +240,19 @@ export function RecruitmentForm() {
               placeholder="Nguyễn Văn A"
               {...register("fullName")}
             />
-            <FieldError errors={errors.fullName ? [errors.fullName] : undefined} />
+            <FieldError
+              errors={errors.fullName ? [errors.fullName] : undefined}
+            />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field data-invalid={!!errors.dateOfBirth}>
               <FieldLabel htmlFor="dateOfBirth">Ngày sinh *</FieldLabel>
-              <Input id="dateOfBirth" type="date" {...register("dateOfBirth")} />
+              <Input
+                id="dateOfBirth"
+                type="date"
+                {...register("dateOfBirth")}
+              />
               <FieldError
                 errors={errors.dateOfBirth ? [errors.dateOfBirth] : undefined}
               />
@@ -257,7 +273,11 @@ export function RecruitmentForm() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field>
               <FieldLabel htmlFor="idIssueDate">Ngày cấp *</FieldLabel>
-              <Input id="idIssueDate" type="date" {...register("idIssueDate")} />
+              <Input
+                id="idIssueDate"
+                type="date"
+                {...register("idIssueDate")}
+              />
             </Field>
             <Field>
               <FieldLabel htmlFor="idIssuePlace">Nơi cấp *</FieldLabel>
@@ -316,6 +336,38 @@ export function RecruitmentForm() {
             />
             <FieldError errors={errors.email ? [errors.email] : undefined} />
           </Field>
+
+          <Controller
+            control={control}
+            name="managerUid"
+            render={({ field }) => (
+              <Field data-invalid={!!errors.managerUid}>
+                <FieldLabel>Tên Quản Lý *</FieldLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={uid => {
+                    field.onChange(uid);
+                    const manager = managers.find(m => m.uid === uid);
+                    setValue("managerName", manager?.name ?? "");
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Chọn tên quản lý" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {managers.map(manager => (
+                      <SelectItem key={manager.uid} value={manager.uid}>
+                        {manager.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldError
+                  errors={errors.managerUid ? [errors.managerUid] : undefined}
+                />
+              </Field>
+            )}
+          />
         </FieldGroup>
       </SectionCard>
 
@@ -349,7 +401,9 @@ export function RecruitmentForm() {
                 </RadioGroup>
                 <FieldError
                   errors={
-                    errors.positionApplied ? [errors.positionApplied] : undefined
+                    errors.positionApplied
+                      ? [errors.positionApplied]
+                      : undefined
                   }
                 />
               </Field>
@@ -395,7 +449,9 @@ export function RecruitmentForm() {
                 </div>
                 <FieldError
                   errors={
-                    errors.referralChannel ? [errors.referralChannel] : undefined
+                    errors.referralChannel
+                      ? [errors.referralChannel]
+                      : undefined
                   }
                 />
               </Field>
@@ -438,7 +494,9 @@ export function RecruitmentForm() {
                   ))}
                 </RadioGroup>
                 <FieldError
-                  errors={errors.familyStatus ? [errors.familyStatus] : undefined}
+                  errors={
+                    errors.familyStatus ? [errors.familyStatus] : undefined
+                  }
                 />
               </Field>
             )}
@@ -451,8 +509,13 @@ export function RecruitmentForm() {
           )}
           {familyStatus === "other" && (
             <Field>
-              <FieldLabel htmlFor="familyStatusOther">Vui lòng ghi rõ</FieldLabel>
-              <Input id="familyStatusOther" {...register("familyStatusOther")} />
+              <FieldLabel htmlFor="familyStatusOther">
+                Vui lòng ghi rõ
+              </FieldLabel>
+              <Input
+                id="familyStatusOther"
+                {...register("familyStatusOther")}
+              />
             </Field>
           )}
         </FieldGroup>
@@ -465,13 +528,13 @@ export function RecruitmentForm() {
               Định nghĩa PEP:
             </span>{" "}
             là cá nhân có ảnh hưởng chính trị, người nắm giữ chức vụ cấp cao
-            trong cơ quan Nhà nước ở tất cả các quốc gia (VD: Nguyên thủ
-            quốc gia, bộ trưởng, thứ trưởng, Đại biểu quốc hội, Đại sứ, Quản
-            lý cấp cao của cơ quan/doanh nghiệp Nhà nước...), hoặc người
-            thân/cá nhân có quan hệ mật thiết với PEP (vợ/chồng, con, bạn
-            đời, cha/mẹ, cha mẹ của bạn đời, anh/chị/em ruột hoặc cùng cha
-            khác mẹ hoặc cùng mẹ khác cha). Nếu không tự xác định được, vui
-            lòng liên hệ bộ phận Nhân sự để được tham vấn.
+            trong cơ quan Nhà nước ở tất cả các quốc gia (VD: Nguyên thủ quốc
+            gia, bộ trưởng, thứ trưởng, Đại biểu quốc hội, Đại sứ, Quản lý cấp
+            cao của cơ quan/doanh nghiệp Nhà nước...), hoặc người thân/cá nhân
+            có quan hệ mật thiết với PEP (vợ/chồng, con, bạn đời, cha/mẹ, cha mẹ
+            của bạn đời, anh/chị/em ruột hoặc cùng cha khác mẹ hoặc cùng mẹ khác
+            cha). Nếu không tự xác định được, vui lòng liên hệ bộ phận Nhân sự
+            để được tham vấn.
           </div>
           <Controller
             control={control}
@@ -479,18 +542,27 @@ export function RecruitmentForm() {
             render={({ field }) => (
               <Field>
                 <FieldLabel>
-                  Anh/chị có phải PEP hoặc có mối quan hệ với PEP như định
-                  nghĩa trên không? *
+                  Anh/chị có phải PEP hoặc có mối quan hệ với PEP như định nghĩa
+                  trên không? *
                 </FieldLabel>
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
+                <RadioGroup
                   value={field.value}
-                  onValueChange={v => v && field.onChange(v)}
+                  onValueChange={field.onChange}
+                  className="flex gap-6"
                 >
-                  <ToggleGroupItem value="no">Không</ToggleGroupItem>
-                  <ToggleGroupItem value="yes">Có</ToggleGroupItem>
-                </ToggleGroup>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="no" id="pepStatus-no" />
+                    <FieldLabel htmlFor="pepStatus-no" className="font-normal">
+                      Không
+                    </FieldLabel>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="yes" id="pepStatus-yes" />
+                    <FieldLabel htmlFor="pepStatus-yes" className="font-normal">
+                      Có
+                    </FieldLabel>
+                  </div>
+                </RadioGroup>
               </Field>
             )}
           />
@@ -507,7 +579,9 @@ export function RecruitmentForm() {
                 />
                 <FieldError
                   errors={
-                    errors.pepRelationship ? [errors.pepRelationship] : undefined
+                    errors.pepRelationship
+                      ? [errors.pepRelationship]
+                      : undefined
                   }
                 />
               </Field>
@@ -540,7 +614,9 @@ export function RecruitmentForm() {
                 <Input id="pepOrganization" {...register("pepOrganization")} />
                 <FieldError
                   errors={
-                    errors.pepOrganization ? [errors.pepOrganization] : undefined
+                    errors.pepOrganization
+                      ? [errors.pepOrganization]
+                      : undefined
                   }
                 />
               </Field>
@@ -554,18 +630,14 @@ export function RecruitmentForm() {
           <p className="text-sm font-medium">Công ty hiện tại</p>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field>
-              <FieldLabel htmlFor="currentCompanyName">
-                Tên công ty
-              </FieldLabel>
+              <FieldLabel htmlFor="currentCompanyName">Tên công ty</FieldLabel>
               <Input
                 id="currentCompanyName"
                 {...register("currentCompanyName")}
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="currentManagerName">
-                Tên quản lý
-              </FieldLabel>
+              <FieldLabel htmlFor="currentManagerName">Tên quản lý</FieldLabel>
               <Input
                 id="currentManagerName"
                 {...register("currentManagerName")}
@@ -585,18 +657,14 @@ export function RecruitmentForm() {
           <p className="text-sm font-medium">Công ty trước đây</p>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field>
-              <FieldLabel htmlFor="previousCompanyName">
-                Tên công ty
-              </FieldLabel>
+              <FieldLabel htmlFor="previousCompanyName">Tên công ty</FieldLabel>
               <Input
                 id="previousCompanyName"
                 {...register("previousCompanyName")}
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="previousManagerName">
-                Tên quản lý
-              </FieldLabel>
+              <FieldLabel htmlFor="previousManagerName">Tên quản lý</FieldLabel>
               <Input
                 id="previousManagerName"
                 {...register("previousManagerName")}
@@ -633,10 +701,13 @@ export function RecruitmentForm() {
             control={control}
             name="q5Training"
             render={({ field }) => (
-              <Field data-slot="checkbox-group" data-invalid={!!errors.q5Training}>
+              <Field
+                data-slot="checkbox-group"
+                data-invalid={!!errors.q5Training}
+              >
                 <FieldLabel>
-                  5) Anh/chị có sẵn sàng tham gia các khóa đào tạo sau để
-                  phát triển bản thân? *
+                  5) Anh/chị có sẵn sàng tham gia các khóa đào tạo sau để phát
+                  triển bản thân? *
                 </FieldLabel>
                 {TRAINING_OPTIONS.map(opt => (
                   <Field
@@ -757,9 +828,9 @@ export function RecruitmentForm() {
               )}
             />
             <FieldLabel htmlFor="commitmentVoluntary" className="font-normal">
-              Tôi xác nhận việc tìm hiểu cơ hội nghề nghiệp này và ứng tuyển
-              làm đại lý tại MVI hoàn toàn là quyết định tự nguyện của cá
-              nhân tôi, không do bất kỳ cá nhân hay tổ chức nào chi phối.
+              Tôi xác nhận việc tìm hiểu cơ hội nghề nghiệp này và ứng tuyển làm
+              đại lý tại MVI hoàn toàn là quyết định tự nguyện của cá nhân tôi,
+              không do bất kỳ cá nhân hay tổ chức nào chi phối.
             </FieldLabel>
           </Field>
           <FieldError
@@ -782,12 +853,9 @@ export function RecruitmentForm() {
                 />
               )}
             />
-            <FieldLabel
-              htmlFor="commitmentDataConsent"
-              className="font-normal"
-            >
-              Tôi đồng ý cho phép xử lý dữ liệu cá nhân (PDPD) để hệ thống
-              thu thập, lưu trữ và xử lý hồ sơ của tôi.
+            <FieldLabel htmlFor="commitmentDataConsent" className="font-normal">
+              Tôi đồng ý cho phép xử lý dữ liệu cá nhân (PDPD) để hệ thống thu
+              thập, lưu trữ và xử lý hồ sơ của tôi.
             </FieldLabel>
           </Field>
           <FieldError

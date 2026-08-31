@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { SESSION_COOKIE_NAME } from "@/lib/firebase/session-cookie";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/settings", "/documents"];
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/settings",
+  "/documents",
+  "/recruitments",
+  "/users",
+];
 
 export function proxy(request: NextRequest) {
   const hasSession = Boolean(request.cookies.get(SESSION_COOKIE_NAME)?.value);
@@ -34,6 +40,8 @@ export const config = {
     "/dashboard/:path*",
     "/settings/:path*",
     "/documents/:path*",
+    "/recruitments/:path*",
+    "/users/:path*",
     "/login",
   ],
 };

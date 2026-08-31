@@ -79,9 +79,7 @@ export function LayoutControls(props: LayoutControlsProps) {
       <PopoverContent align="end">
         <div className="flex flex-col gap-5">
           <div className="space-y-1.5">
-            <h4 className="text-sm leading-none font-medium">
-              Cài đặt bố cục
-            </h4>
+            <h4 className="text-sm leading-none font-medium">Cài đặt bố cục</h4>
             <p className="text-muted-foreground text-xs">
               Tùy chỉnh tùy chọn bố cục bảng điều khiển của bạn.
             </p>
@@ -165,7 +163,9 @@ export function LayoutControls(props: LayoutControlsProps) {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Kiểu thanh điều hướng</Label>
+              <Label className="text-xs font-medium">
+                Kiểu thanh điều hướng
+              </Label>
               <ToggleGroup
                 className="w-full **:data-[slot=toggle-group-item]:flex-1 **:data-[slot=toggle-group-item]:text-xs"
                 size="sm"
