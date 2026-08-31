@@ -2,11 +2,14 @@ import { ReactNode } from "react";
 
 import Image from "next/image";
 
-const QUOTE = '"Hành trình vạn dặm bắt đầu từ một bước chân." — Lão Tử';
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
+  const dict = await getDictionary();
+  const QUOTE = dict.auth.login.hero.quote;
+
   return (
     <div className="flex min-h-svh w-full">
       <div className="relative hidden w-[60%] overflow-hidden lg:flex lg:flex-col">
@@ -40,11 +43,10 @@ export default function AuthLayout({
               className="h-7 w-11"
             />
             <h2 className="text-3xl leading-tight font-semibold text-balance">
-              Một bình minh mới bắt đầu
+              {dict.auth.login.hero.heading}
             </h2>
             <p className="text-sm text-white/70">
-              Đăng nhập để quản lý lương thưởng và phúc lợi cho đội ngũ Asahi
-              Livwell.
+              {dict.auth.login.hero.subtitle}
             </p>
           </div>
 

@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 
 import { adminDb, adminStorage } from "@/lib/firebase/admin";
 import { getSessionUser } from "@/lib/firebase/session";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { ActionResult } from "@/lib/types";
 
 const COLLECTION = "documents";
@@ -21,9 +22,17 @@ export type TDocument = {
   uploadedAt: string;
 };
 
-export async function listDocuments(): Promise<ActionResult<TDocument[]>> {
+async function requireAuth() {
+  const dict = await getDictionary();
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not authenticated." };
+  if (!user) return { ok: false as const, error: dict.errors.notAuthenticated };
+  return { ok: true as const, user, dict };
+}
+
+export async function listDocuments(): Promise<ActionResult<TDocument[]>> {
+  const check = await requireAuth();
+  if (!check.ok) return check;
+  const { dict } = check;
 
   try {
     const snapshot = await adminDb
@@ -38,22 +47,23 @@ export async function listDocuments(): Promise<ActionResult<TDocument[]>> {
 
     return { ok: true, data: documents };
   } catch {
-    return { ok: false, error: "Unable to load documents." };
+    return { ok: false, error: dict.errors.documents.listFailed };
   }
 }
 
 export async function uploadDocument(
   formData: FormData
 ): Promise<ActionResult<TDocument>> {
-  const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not authenticated." };
+  const check = await requireAuth();
+  if (!check.ok) return check;
+  const { user, dict } = check;
 
   const file = formData.get("file");
   if (!(file instanceof File)) {
-    return { ok: false, error: "No file provided." };
+    return { ok: false, error: dict.errors.documents.noFileSelected };
   }
   if (file.size > MAX_UPLOAD_BYTES) {
-    return { ok: false, error: "File must be 5MB or smaller." };
+    return { ok: false, error: dict.errors.documents.fileTooLarge };
   }
 
   const storagePath = `documents/${user.uid}/${randomUUID()}-${file.name}`;
@@ -67,8 +77,6 @@ export async function uploadDocument(
     });
 
     const uploadedAt = new Date().toISOString();
-
-    console.log({ fileName: file.name, storagePath, uploadedAt, COLLECTION });
 
     const docRef = await adminDb.collection(COLLECTION).add({
       fileName: file.name,
@@ -94,20 +102,21 @@ export async function uploadDocument(
       },
     };
   } catch (error) {
-    console.error("Error generating download link:", error);
-
-    return { ok: false, error: "Unable to upload the document." };
+    console.error("Error uploading document:", error);
+    return { ok: false, error: dict.errors.documents.uploadFailed };
   }
 }
 
 export async function deleteDocument(id: string): Promise<ActionResult> {
-  const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not authenticated." };
+  const check = await requireAuth();
+  if (!check.ok) return check;
+  const { dict } = check;
 
   try {
     const docRef = adminDb.collection(COLLECTION).doc(id);
     const doc = await docRef.get();
-    if (!doc.exists) return { ok: false, error: "Document not found." };
+    if (!doc.exists)
+      return { ok: false, error: dict.errors.documents.notFound };
 
     const { storagePath } = doc.data() as TDocument;
     await adminStorage
@@ -118,19 +127,21 @@ export async function deleteDocument(id: string): Promise<ActionResult> {
 
     return { ok: true, data: null };
   } catch {
-    return { ok: false, error: "Unable to delete the document." };
+    return { ok: false, error: dict.errors.documents.deleteFailed };
   }
 }
 
 export async function getDocumentDownloadUrl(
   id: string
 ): Promise<ActionResult<{ url: string }>> {
-  const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not authenticated." };
+  const check = await requireAuth();
+  if (!check.ok) return check;
+  const { dict } = check;
 
   try {
     const doc = await adminDb.collection(COLLECTION).doc(id).get();
-    if (!doc.exists) return { ok: false, error: "Document not found." };
+    if (!doc.exists)
+      return { ok: false, error: dict.errors.documents.notFound };
 
     const { storagePath } = doc.data() as TDocument;
     const [url] = await adminStorage
@@ -144,6 +155,6 @@ export async function getDocumentDownloadUrl(
     return { ok: true, data: { url } };
   } catch (error) {
     console.error("Error generating download link:", error);
-    return { ok: false, error: "Unable to generate a download link." };
+    return { ok: false, error: dict.errors.documents.downloadUrlFailed };
   }
 }

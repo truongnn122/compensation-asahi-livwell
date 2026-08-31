@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/ui/data-table/data-table";
 import { DocumentUpload } from "@/components/document-upload";
 import { createDocumentsColumns } from "@/components/documents-columns";
+import { useDictionary } from "@/hooks/use-dictionary";
 import {
   deleteDocument,
   getDocumentDownloadUrl,
@@ -18,6 +19,7 @@ export function DocumentsView({
 }: {
   initialDocuments: TDocument[];
 }) {
+  const t = useDictionary();
   const [documents, setDocuments] = useState(initialDocuments);
 
   const handleDownload = async (id: string) => {
@@ -38,11 +40,12 @@ export function DocumentsView({
       setDocuments(previous);
       toast.error(result.error);
     } else {
-      toast.success("Đã xóa tài liệu");
+      toast.success(t.documents.deleted);
     }
   };
 
   const columns = createDocumentsColumns({
+    t,
     onDownload: handleDownload,
     onDelete: handleDelete,
   });
@@ -55,7 +58,7 @@ export function DocumentsView({
       <DataTable
         data={documents}
         columns={columns}
-        emptyMessage="Chưa có tài liệu nào được tải lên."
+        emptyMessage={t.documents.empty}
         enableColumnVisibility={false}
       />
     </div>

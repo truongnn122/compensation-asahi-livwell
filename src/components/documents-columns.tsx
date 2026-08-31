@@ -4,33 +4,36 @@ import { Download, Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { formatBytes, formatDate } from "@/lib/utils";
 import type { TDocument } from "@/server/documents-actions";
 
 export function createDocumentsColumns({
+  t,
   onDownload,
   onDelete,
 }: {
+  t: Dictionary;
   onDownload: (id: string) => void;
   onDelete: (id: string) => void;
 }): ColumnDef<TDocument>[] {
   return [
     {
       accessorKey: "fileName",
-      header: "Tên tệp",
+      header: t.documents.columns.fileName,
     },
     {
       accessorKey: "size",
-      header: "Kích thước",
+      header: t.documents.columns.size,
       cell: ({ row }) => formatBytes(row.original.size),
     },
     {
       accessorKey: "uploadedByEmail",
-      header: "Người tải lên",
+      header: t.documents.columns.uploadedBy,
     },
     {
       accessorKey: "uploadedAt",
-      header: "Ngày tải lên",
+      header: t.documents.columns.uploadedAt,
       cell: ({ row }) => formatDate(row.original.uploadedAt),
     },
     {
@@ -44,7 +47,7 @@ export function createDocumentsColumns({
             onClick={() => onDownload(row.original.id)}
           >
             <Download />
-            <span className="sr-only">Tải xuống</span>
+            <span className="sr-only">{t.documents.downloadSr}</span>
           </Button>
           <Button
             variant="ghost"
@@ -52,7 +55,7 @@ export function createDocumentsColumns({
             onClick={() => onDelete(row.original.id)}
           >
             <Trash2 />
-            <span className="sr-only">Xóa</span>
+            <span className="sr-only">{t.documents.deleteSr}</span>
           </Button>
         </div>
       ),

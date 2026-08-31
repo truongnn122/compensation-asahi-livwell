@@ -7,22 +7,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { formatDate } from "@/lib/utils";
 import type { TRecruitmentSubmission } from "@/server/recruitment-actions";
-
-const POSITION_LABELS: Record<string, string> = {
-  life_planner: "Life Planner (LP)",
-  sales_director: "Giám Đốc Ban Kinh Doanh (DM)",
-  sales_manager: "Trưởng Phòng Kinh Doanh (UM)",
-  other: "Khác",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  new: "Mới",
-  contacted: "Đã liên hệ",
-  hired: "Đã tuyển",
-  rejected: "Từ chối",
-};
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive"> =
   {
@@ -33,46 +20,48 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive"> =
   };
 
 export function createRecruitmentsColumns({
+  t,
   onDelete,
 }: {
+  t: Dictionary;
   onDelete: (submission: TRecruitmentSubmission) => void;
 }): ColumnDef<TRecruitmentSubmission & { id: string }>[] {
   return [
     {
       accessorKey: "fullName",
-      header: "Họ và tên",
+      header: t.recruitmentsList.columns.name,
     },
     {
       accessorKey: "mobile1",
-      header: "Điện thoại",
+      header: t.recruitmentsList.columns.phone,
     },
     {
       accessorKey: "email",
-      header: "Email",
+      header: t.recruitmentsList.columns.email,
     },
     {
       accessorKey: "positionApplied",
-      header: "Vị trí ứng tuyển",
+      header: t.recruitmentsList.columns.position,
       cell: ({ row }) =>
-        POSITION_LABELS[row.original.positionApplied] ??
+        t.recruitmentsList.positionLabels[row.original.positionApplied] ??
         row.original.positionApplied,
     },
     {
       accessorKey: "managerName",
-      header: "Quản lý",
+      header: t.recruitmentsList.columns.manager,
     },
     {
       accessorKey: "status",
-      header: "Trạng thái",
+      header: t.recruitmentsList.columns.status,
       cell: ({ row }) => (
         <Badge variant={STATUS_VARIANTS[row.original.status]}>
-          {STATUS_LABELS[row.original.status]}
+          {t.recruitmentsList.statusLabels[row.original.status]}
         </Badge>
       ),
     },
     {
       accessorKey: "submittedAt",
-      header: "Ngày nộp",
+      header: t.recruitmentsList.columns.submittedAt,
       cell: ({ row }) => formatDate(row.original.submittedAt),
     },
     {
@@ -83,7 +72,7 @@ export function createRecruitmentsColumns({
           <Button variant="ghost" size="icon-sm" asChild>
             <Link href={`/recruitments/${row.original.id}`}>
               <IconEye className="size-4" />
-              <span className="sr-only">Xem chi tiết</span>
+              <span className="sr-only">{t.recruitmentsList.viewSr}</span>
             </Link>
           </Button>
           <Button
@@ -92,7 +81,7 @@ export function createRecruitmentsColumns({
             onClick={() => onDelete(row.original)}
           >
             <IconTrash className="size-4" />
-            <span className="sr-only">Xóa</span>
+            <span className="sr-only">{t.recruitmentsList.deleteSr}</span>
           </Button>
         </div>
       ),
@@ -101,5 +90,3 @@ export function createRecruitmentsColumns({
     },
   ];
 }
-
-export { POSITION_LABELS, STATUS_LABELS };

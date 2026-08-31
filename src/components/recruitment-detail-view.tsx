@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -27,10 +27,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RecruitmentFormFields } from "@/components/recruitment-form-fields";
-import { STATUS_LABELS } from "@/components/recruitments-columns";
+import { useDictionary } from "@/hooks/use-dictionary";
 import { formatDate } from "@/lib/utils";
 import {
-  recruitmentSchema,
+  buildRecruitmentSchema,
   type RecruitmentValues,
 } from "@/lib/validations/recruitment";
 import {
@@ -51,11 +51,16 @@ export function RecruitmentDetailView({
   managers: TManagerOption[];
 }) {
   const router = useRouter();
+  const t = useDictionary();
   const [status, setStatus] = useState(submission.status);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  const schema = useMemo(
+    () => buildRecruitmentSchema(t.recruitmentForm.validation),
+    [t]
+  );
   const {
     register,
     handleSubmit,
@@ -64,7 +69,7 @@ export function RecruitmentDetailView({
     setValue,
     formState: { errors },
   } = useForm<RecruitmentValues>({
-    resolver: zodResolver(recruitmentSchema),
+    resolver: zodResolver(schema),
     defaultValues: submission,
   });
 
@@ -95,7 +100,7 @@ export function RecruitmentDetailView({
           return;
         }
       }
-      toast.success("Đã lưu thay đổi");
+      toast.success(t.recruitmentDetailView.saved);
       router.refresh();
     } finally {
       setIsSaving(false);
@@ -111,7 +116,7 @@ export function RecruitmentDetailView({
       setIsDeleting(false);
       return;
     }
-    toast.success("Đã xóa hồ sơ ứng viên");
+    toast.success(t.recruitmentDetailView.deleted);
     router.push("/recruitments");
   };
 
@@ -120,7 +125,7 @@ export function RecruitmentDetailView({
       <div className="rounded-xl border bg-card p-6 shadow-sm md:p-8">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>
-            <FieldLabel>Trạng thái</FieldLabel>
+            <FieldLabel>{t.recruitmentDetailView.status}</FieldLabel>
             <Select
               value={status}
               onValueChange={v =>
@@ -131,16 +136,18 @@ export function RecruitmentDetailView({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
+                {Object.entries(t.recruitmentsList.statusLabels).map(
+                  ([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  )
+                )}
               </SelectContent>
             </Select>
           </Field>
           <Field>
-            <FieldLabel>Ngày nộp</FieldLabel>
+            <FieldLabel>{t.recruitmentDetailView.submittedAt}</FieldLabel>
             <p className="text-muted-foreground text-sm">
               {formatDate(submission.submittedAt)}
             </p>
@@ -165,25 +172,32 @@ export function RecruitmentDetailView({
           disabled={isDeleting}
           onClick={() => setConfirmDelete(true)}
         >
-          Xóa hồ sơ
+          {t.recruitmentDetailView.deleteButton}
         </Button>
         <Button type="submit" disabled={isSaving}>
-          {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
+          {isSaving
+            ? t.recruitmentDetailView.saving
+            : t.recruitmentDetailView.saveButton}
         </Button>
       </div>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xóa hồ sơ ứng viên?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t.recruitmentDetailView.deleteDialogTitle}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Hồ sơ của {submission.fullName} sẽ bị xóa vĩnh viễn, bao gồm mọi
-              tệp đính kèm. Hành động này không thể hoàn tác.
+              {t.recruitmentDetailView.deleteDialogDescription(
+                submission.fullName
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Xóa</AlertDialogAction>
+            <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              {t.common.delete}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

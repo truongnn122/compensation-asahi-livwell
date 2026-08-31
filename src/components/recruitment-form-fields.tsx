@@ -38,6 +38,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useDictionary } from "@/hooks/use-dictionary";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { formatBytes } from "@/lib/utils";
 import {
   uploadRecruitmentAttachment,
@@ -73,74 +75,22 @@ function SectionCard({
   );
 }
 
-const POSITION_OPTIONS = [
-  { value: "life_planner", label: "Life Planner (LP)" },
-  { value: "sales_director", label: "Giám Đốc Ban Kinh Doanh (DM)" },
-  { value: "sales_manager", label: "Trưởng Phòng Kinh Doanh (UM)" },
-  { value: "other", label: "Khác" },
-] as const;
-
-const REFERRAL_OPTIONS = [
-  { value: "ads", label: "Quảng cáo" },
-  { value: "fanpage", label: "Fanpage" },
-  { value: "website", label: "Website tuyển dụng" },
-  { value: "other", label: "Khác" },
-] as const;
-
-const FAMILY_STATUS_OPTIONS = [
-  { value: "single", label: "Độc thân" },
-  { value: "married", label: "Đã kết hôn" },
-  {
-    value: "single_dependent",
-    label: "Độc thân, có người phụ thuộc (VD: cha mẹ già)",
-  },
-  { value: "married_children", label: "Đã kết hôn, có con" },
-  { value: "other", label: "Tình trạng khác" },
-] as const;
-
-const TRAINING_OPTIONS = [
-  { value: "lpfc", label: "Khóa Khởi đầu sự nghiệp (LPFC – 5 ngày)" },
-  {
-    value: "sales_skills",
-    label: "Khóa xây dựng kỹ năng bán hàng (3 buổi trong 3 tháng)",
-  },
-  {
-    value: "sales_management",
-    label: "Hoạt động quản lý bán hàng định kỳ (hàng tuần)",
-  },
-] as const;
-
-const OPEN_QUESTIONS: {
-  name: "q1" | "q2" | "q3" | "q4" | "q6";
-  label: string;
-}[] = [
-  {
-    name: "q1",
-    label:
-      "Trong cuộc sống, anh/chị đã từng thấy người thân hoặc người xung quanh nhận được quyền lợi từ bảo hiểm nhân thọ chưa?",
-  },
-  { name: "q2", label: "Anh/chị nhìn nhận như thế nào về bảo hiểm nhân thọ?" },
-  {
-    name: "q3",
-    label:
-      "Người thân, bạn bè sẽ nói gì nếu anh/chị trở thành tư vấn viên bảo hiểm nhân thọ?",
-  },
-  {
-    name: "q4",
-    label:
-      "Ai là 10 người đầu tiên anh/chị sẽ trò chuyện về bảo hiểm nhân thọ?",
-  },
-  {
-    name: "q6",
-    label:
-      "Anh/chị mong MVI hỗ trợ gì để thành công, tăng thu nhập, có cơ hội thăng tiến, nâng cao kỹ năng và kiến thức?",
-  },
-];
-
 const MAX_FILES = 5;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_TYPES =
   "image/jpeg,image/png,image/webp,image/heic,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+function getOpenQuestions(
+  t: Dictionary
+): { name: "q1" | "q2" | "q3" | "q4" | "q6"; label: string }[] {
+  return [
+    { name: "q1", label: t.recruitmentForm.openQuestions.q1 },
+    { name: "q2", label: t.recruitmentForm.openQuestions.q2 },
+    { name: "q3", label: t.recruitmentForm.openQuestions.q3 },
+    { name: "q4", label: t.recruitmentForm.openQuestions.q4 },
+    { name: "q6", label: t.recruitmentForm.openQuestions.q6 },
+  ];
+}
 
 export function RecruitmentFormFields({
   control,
@@ -159,8 +109,60 @@ export function RecruitmentFormFields({
   managers: TManagerOption[];
   onDownloadAttachment?: (attachment: TAttachment) => void;
 }) {
+  const t = useDictionary();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const POSITION_OPTIONS = [
+    {
+      value: "life_planner",
+      label: t.recruitmentForm.options.position.life_planner,
+    },
+    {
+      value: "sales_director",
+      label: t.recruitmentForm.options.position.sales_director,
+    },
+    {
+      value: "sales_manager",
+      label: t.recruitmentForm.options.position.sales_manager,
+    },
+    { value: "other", label: t.recruitmentForm.options.position.other },
+  ] as const;
+
+  const REFERRAL_OPTIONS = [
+    { value: "ads", label: t.recruitmentForm.options.referral.ads },
+    { value: "fanpage", label: t.recruitmentForm.options.referral.fanpage },
+    { value: "website", label: t.recruitmentForm.options.referral.website },
+    { value: "other", label: t.recruitmentForm.options.referral.other },
+  ] as const;
+
+  const FAMILY_STATUS_OPTIONS = [
+    { value: "single", label: t.recruitmentForm.options.familyStatus.single },
+    { value: "married", label: t.recruitmentForm.options.familyStatus.married },
+    {
+      value: "single_dependent",
+      label: t.recruitmentForm.options.familyStatus.single_dependent,
+    },
+    {
+      value: "married_children",
+      label: t.recruitmentForm.options.familyStatus.married_children,
+    },
+    { value: "other", label: t.recruitmentForm.options.familyStatus.other },
+  ] as const;
+
+  const TRAINING_OPTIONS = [
+    { value: "lpfc", label: t.recruitmentForm.options.training.lpfc },
+    {
+      value: "sales_skills",
+      label: t.recruitmentForm.options.training.sales_skills,
+    },
+    {
+      value: "sales_management",
+      label: t.recruitmentForm.options.training.sales_management,
+    },
+  ] as const;
+
+  const OPEN_QUESTIONS = getOpenQuestions(t);
 
   const positionApplied = watch("positionApplied");
   const referralChannel = watch("referralChannel");
@@ -177,12 +179,12 @@ export function RecruitmentFormFields({
 
     setUploadError(null);
     if (attachments.length + files.length > MAX_FILES) {
-      setUploadError(`Tối đa ${MAX_FILES} tệp.`);
+      setUploadError(t.recruitmentForm.maxFilesError(MAX_FILES));
       return;
     }
     const oversized = files.find(f => f.size > MAX_FILE_BYTES);
     if (oversized) {
-      setUploadError("Mỗi tệp tối đa 5MB.");
+      setUploadError(t.recruitmentForm.maxFileSizeError);
       return;
     }
 
@@ -212,13 +214,15 @@ export function RecruitmentFormFields({
 
   return (
     <>
-      <SectionCard number={1} title="Thông tin cá nhân">
+      <SectionCard number={1} title={t.recruitmentForm.section1.title}>
         <FieldGroup>
           <Field data-invalid={!!errors.fullName}>
-            <FieldLabel htmlFor="fullName">Họ và tên *</FieldLabel>
+            <FieldLabel htmlFor="fullName">
+              {t.recruitmentForm.section1.fullName}
+            </FieldLabel>
             <Input
               id="fullName"
-              placeholder="Nguyễn Văn A"
+              placeholder={t.recruitmentForm.section1.fullNamePlaceholder}
               {...register("fullName")}
             />
             <FieldError
@@ -228,7 +232,9 @@ export function RecruitmentFormFields({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field data-invalid={!!errors.dateOfBirth}>
-              <FieldLabel htmlFor="dateOfBirth">Ngày sinh *</FieldLabel>
+              <FieldLabel htmlFor="dateOfBirth">
+                {t.recruitmentForm.section1.dateOfBirth}
+              </FieldLabel>
               <Input
                 id="dateOfBirth"
                 type="date"
@@ -239,10 +245,12 @@ export function RecruitmentFormFields({
               />
             </Field>
             <Field data-invalid={!!errors.idNumber}>
-              <FieldLabel htmlFor="idNumber">Số CCCD *</FieldLabel>
+              <FieldLabel htmlFor="idNumber">
+                {t.recruitmentForm.section1.idNumber}
+              </FieldLabel>
               <Input
                 id="idNumber"
-                placeholder="9 hoặc 12 số"
+                placeholder={t.recruitmentForm.section1.idNumberPlaceholder}
                 {...register("idNumber")}
               />
               <FieldError
@@ -253,7 +261,9 @@ export function RecruitmentFormFields({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor="idIssueDate">Ngày cấp *</FieldLabel>
+              <FieldLabel htmlFor="idIssueDate">
+                {t.recruitmentForm.section1.idIssueDate}
+              </FieldLabel>
               <Input
                 id="idIssueDate"
                 type="date"
@@ -261,10 +271,12 @@ export function RecruitmentFormFields({
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="idIssuePlace">Nơi cấp *</FieldLabel>
+              <FieldLabel htmlFor="idIssuePlace">
+                {t.recruitmentForm.section1.idIssuePlace}
+              </FieldLabel>
               <Input
                 id="idIssuePlace"
-                placeholder="Cục Cảnh sát QLHC về TTXH"
+                placeholder={t.recruitmentForm.section1.idIssuePlacePlaceholder}
                 {...register("idIssuePlace")}
               />
             </Field>
@@ -272,7 +284,7 @@ export function RecruitmentFormFields({
 
           <Field data-invalid={!!errors.permanentAddress}>
             <FieldLabel htmlFor="permanentAddress">
-              Địa chỉ thường trú *
+              {t.recruitmentForm.section1.permanentAddress}
             </FieldLabel>
             <Input id="permanentAddress" {...register("permanentAddress")} />
             <FieldError
@@ -284,17 +296,19 @@ export function RecruitmentFormFields({
 
           <Field>
             <FieldLabel htmlFor="contactAddress">
-              Địa chỉ liên hệ (nếu khác thường trú)
+              {t.recruitmentForm.section1.contactAddress}
             </FieldLabel>
             <Input id="contactAddress" {...register("contactAddress")} />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field data-invalid={!!errors.mobile1}>
-              <FieldLabel htmlFor="mobile1">Di động 1 *</FieldLabel>
+              <FieldLabel htmlFor="mobile1">
+                {t.recruitmentForm.section1.mobile1}
+              </FieldLabel>
               <Input
                 id="mobile1"
-                placeholder="09xxxxxxxx"
+                placeholder={t.recruitmentForm.section1.mobile1Placeholder}
                 {...register("mobile1")}
               />
               <FieldError
@@ -302,17 +316,21 @@ export function RecruitmentFormFields({
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="mobile2">Di động 2</FieldLabel>
+              <FieldLabel htmlFor="mobile2">
+                {t.recruitmentForm.section1.mobile2}
+              </FieldLabel>
               <Input id="mobile2" {...register("mobile2")} />
             </Field>
           </div>
 
           <Field data-invalid={!!errors.email}>
-            <FieldLabel htmlFor="email">Email *</FieldLabel>
+            <FieldLabel htmlFor="email">
+              {t.recruitmentForm.section1.email}
+            </FieldLabel>
             <Input
               id="email"
               type="email"
-              placeholder="ban@email.com"
+              placeholder={t.recruitmentForm.section1.emailPlaceholder}
               {...register("email")}
             />
             <FieldError errors={errors.email ? [errors.email] : undefined} />
@@ -323,7 +341,9 @@ export function RecruitmentFormFields({
             name="managerUid"
             render={({ field }) => (
               <Field data-invalid={!!errors.managerUid}>
-                <FieldLabel>Tên Quản Lý *</FieldLabel>
+                <FieldLabel>
+                  {t.recruitmentForm.section1.managerLabel}
+                </FieldLabel>
                 <Select
                   value={field.value}
                   onValueChange={uid => {
@@ -333,7 +353,11 @@ export function RecruitmentFormFields({
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Chọn tên quản lý" />
+                    <SelectValue
+                      placeholder={
+                        t.recruitmentForm.section1.managerPlaceholder
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {managers.map(manager => (
@@ -352,14 +376,16 @@ export function RecruitmentFormFields({
         </FieldGroup>
       </SectionCard>
 
-      <SectionCard number={2} title="Vị trí ứng tuyển & kênh biết đến">
+      <SectionCard number={2} title={t.recruitmentForm.section2.title}>
         <FieldGroup>
           <Controller
             control={control}
             name="positionApplied"
             render={({ field }) => (
               <Field data-invalid={!!errors.positionApplied}>
-                <FieldLabel>Vị trí ứng tuyển tại MVI *</FieldLabel>
+                <FieldLabel>
+                  {t.recruitmentForm.section2.positionLabel}
+                </FieldLabel>
                 <RadioGroup
                   value={field.value}
                   onValueChange={field.onChange}
@@ -392,7 +418,9 @@ export function RecruitmentFormFields({
           />
           {positionApplied === "other" && (
             <Field>
-              <FieldLabel htmlFor="positionOther">Vui lòng ghi rõ</FieldLabel>
+              <FieldLabel htmlFor="positionOther">
+                {t.recruitmentForm.section2.specifyOther}
+              </FieldLabel>
               <Input id="positionOther" {...register("positionOther")} />
             </Field>
           )}
@@ -403,7 +431,7 @@ export function RecruitmentFormFields({
             render={({ field }) => (
               <Field data-invalid={!!errors.referralChannel}>
                 <FieldLabel>
-                  Ứng viên biết đến chương trình tuyển dụng qua *
+                  {t.recruitmentForm.section2.referralLabel}
                 </FieldLabel>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {REFERRAL_OPTIONS.map(opt => (
@@ -440,14 +468,16 @@ export function RecruitmentFormFields({
           />
           {referralChannel.includes("other") && (
             <Field>
-              <FieldLabel htmlFor="referralOther">Vui lòng ghi rõ</FieldLabel>
+              <FieldLabel htmlFor="referralOther">
+                {t.recruitmentForm.section2.specifyOther}
+              </FieldLabel>
               <Input id="referralOther" {...register("referralOther")} />
             </Field>
           )}
         </FieldGroup>
       </SectionCard>
 
-      <SectionCard number={3} title="Tình trạng gia đình">
+      <SectionCard number={3} title={t.recruitmentForm.section3.title}>
         <FieldGroup>
           <Controller
             control={control}
@@ -484,14 +514,16 @@ export function RecruitmentFormFields({
           />
           {familyStatus === "married_children" && (
             <Field>
-              <FieldLabel htmlFor="childrenCount">Số lượng con</FieldLabel>
+              <FieldLabel htmlFor="childrenCount">
+                {t.recruitmentForm.section3.childrenCount}
+              </FieldLabel>
               <Input id="childrenCount" {...register("childrenCount")} />
             </Field>
           )}
           {familyStatus === "other" && (
             <Field>
               <FieldLabel htmlFor="familyStatusOther">
-                Vui lòng ghi rõ
+                {t.recruitmentForm.section3.specifyOther}
               </FieldLabel>
               <Input
                 id="familyStatusOther"
@@ -502,20 +534,13 @@ export function RecruitmentFormFields({
         </FieldGroup>
       </SectionCard>
 
-      <SectionCard number={4} title="Thông tin mối quan hệ với PEP">
+      <SectionCard number={4} title={t.recruitmentForm.section4.title}>
         <FieldGroup>
           <div className="bg-muted text-muted-foreground rounded-lg p-4 text-sm">
             <span className="text-foreground font-semibold">
-              Định nghĩa PEP:
+              {t.recruitmentForm.section4.definitionLabel}
             </span>{" "}
-            là cá nhân có ảnh hưởng chính trị, người nắm giữ chức vụ cấp cao
-            trong cơ quan Nhà nước ở tất cả các quốc gia (VD: Nguyên thủ quốc
-            gia, bộ trưởng, thứ trưởng, Đại biểu quốc hội, Đại sứ, Quản lý cấp
-            cao của cơ quan/doanh nghiệp Nhà nước...), hoặc người thân/cá nhân
-            có quan hệ mật thiết với PEP (vợ/chồng, con, bạn đời, cha/mẹ, cha mẹ
-            của bạn đời, anh/chị/em ruột hoặc cùng cha khác mẹ hoặc cùng mẹ khác
-            cha). Nếu không tự xác định được, vui lòng liên hệ bộ phận Nhân sự
-            để được tham vấn.
+            {t.recruitmentForm.section4.definitionText}
           </div>
           <Controller
             control={control}
@@ -523,8 +548,7 @@ export function RecruitmentFormFields({
             render={({ field }) => (
               <Field>
                 <FieldLabel>
-                  Anh/chị có phải PEP hoặc có mối quan hệ với PEP như định nghĩa
-                  trên không? *
+                  {t.recruitmentForm.section4.questionLabel}
                 </FieldLabel>
                 <RadioGroup
                   value={field.value}
@@ -534,13 +558,13 @@ export function RecruitmentFormFields({
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="no" id="pepStatus-no" />
                     <FieldLabel htmlFor="pepStatus-no" className="font-normal">
-                      Không
+                      {t.recruitmentForm.section4.no}
                     </FieldLabel>
                   </div>
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="yes" id="pepStatus-yes" />
                     <FieldLabel htmlFor="pepStatus-yes" className="font-normal">
-                      Có
+                      {t.recruitmentForm.section4.yes}
                     </FieldLabel>
                   </div>
                 </RadioGroup>
@@ -551,11 +575,13 @@ export function RecruitmentFormFields({
             <FieldGroup>
               <Field data-invalid={!!errors.pepRelationship}>
                 <FieldLabel htmlFor="pepRelationship">
-                  Mối quan hệ với PEP *
+                  {t.recruitmentForm.section4.relationship}
                 </FieldLabel>
                 <Input
                   id="pepRelationship"
-                  placeholder="VD: Cha/mẹ, vợ/chồng, bản thân là PEP..."
+                  placeholder={
+                    t.recruitmentForm.section4.relationshipPlaceholder
+                  }
                   {...register("pepRelationship")}
                 />
                 <FieldError
@@ -569,7 +595,7 @@ export function RecruitmentFormFields({
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field data-invalid={!!errors.pepFullName}>
                   <FieldLabel htmlFor="pepFullName">
-                    Họ và tên (của PEP) *
+                    {t.recruitmentForm.section4.fullName}
                   </FieldLabel>
                   <Input id="pepFullName" {...register("pepFullName")} />
                   <FieldError
@@ -579,7 +605,9 @@ export function RecruitmentFormFields({
                   />
                 </Field>
                 <Field data-invalid={!!errors.pepPosition}>
-                  <FieldLabel htmlFor="pepPosition">Chức vụ *</FieldLabel>
+                  <FieldLabel htmlFor="pepPosition">
+                    {t.recruitmentForm.section4.position}
+                  </FieldLabel>
                   <Input id="pepPosition" {...register("pepPosition")} />
                   <FieldError
                     errors={
@@ -590,7 +618,7 @@ export function RecruitmentFormFields({
               </div>
               <Field data-invalid={!!errors.pepOrganization}>
                 <FieldLabel htmlFor="pepOrganization">
-                  Đơn vị công tác *
+                  {t.recruitmentForm.section4.organization}
                 </FieldLabel>
                 <Input id="pepOrganization" {...register("pepOrganization")} />
                 <FieldError
@@ -606,19 +634,25 @@ export function RecruitmentFormFields({
         </FieldGroup>
       </SectionCard>
 
-      <SectionCard number={5} title="Về công việc của bạn">
+      <SectionCard number={5} title={t.recruitmentForm.section5.title}>
         <FieldGroup>
-          <p className="text-sm font-medium">Công ty hiện tại</p>
+          <p className="text-sm font-medium">
+            {t.recruitmentForm.section5.currentCompany}
+          </p>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field>
-              <FieldLabel htmlFor="currentCompanyName">Tên công ty</FieldLabel>
+              <FieldLabel htmlFor="currentCompanyName">
+                {t.recruitmentForm.section5.companyName}
+              </FieldLabel>
               <Input
                 id="currentCompanyName"
                 {...register("currentCompanyName")}
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="currentManagerName">Tên quản lý</FieldLabel>
+              <FieldLabel htmlFor="currentManagerName">
+                {t.recruitmentForm.section5.managerName}
+              </FieldLabel>
               <Input
                 id="currentManagerName"
                 {...register("currentManagerName")}
@@ -626,7 +660,7 @@ export function RecruitmentFormFields({
             </Field>
             <Field>
               <FieldLabel htmlFor="currentManagerContact">
-                Liên hệ quản lý
+                {t.recruitmentForm.section5.managerContact}
               </FieldLabel>
               <Input
                 id="currentManagerContact"
@@ -635,17 +669,23 @@ export function RecruitmentFormFields({
             </Field>
           </div>
 
-          <p className="text-sm font-medium">Công ty trước đây</p>
+          <p className="text-sm font-medium">
+            {t.recruitmentForm.section5.previousCompany}
+          </p>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field>
-              <FieldLabel htmlFor="previousCompanyName">Tên công ty</FieldLabel>
+              <FieldLabel htmlFor="previousCompanyName">
+                {t.recruitmentForm.section5.companyName}
+              </FieldLabel>
               <Input
                 id="previousCompanyName"
                 {...register("previousCompanyName")}
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="previousManagerName">Tên quản lý</FieldLabel>
+              <FieldLabel htmlFor="previousManagerName">
+                {t.recruitmentForm.section5.managerName}
+              </FieldLabel>
               <Input
                 id="previousManagerName"
                 {...register("previousManagerName")}
@@ -653,7 +693,7 @@ export function RecruitmentFormFields({
             </Field>
             <Field>
               <FieldLabel htmlFor="previousManagerContact">
-                Liên hệ quản lý
+                {t.recruitmentForm.section5.managerContact}
               </FieldLabel>
               <Input
                 id="previousManagerContact"
@@ -664,7 +704,7 @@ export function RecruitmentFormFields({
         </FieldGroup>
       </SectionCard>
 
-      <SectionCard number={6} title="Vui lòng trả lời các câu hỏi sau">
+      <SectionCard number={6} title={t.recruitmentForm.section6.title}>
         <FieldGroup>
           {OPEN_QUESTIONS.map((q, i) => (
             <Field key={q.name} data-invalid={!!errors[q.name]}>
@@ -687,8 +727,7 @@ export function RecruitmentFormFields({
                 data-invalid={!!errors.q5Training}
               >
                 <FieldLabel>
-                  5) Anh/chị có sẵn sàng tham gia các khóa đào tạo sau để phát
-                  triển bản thân? *
+                  {t.recruitmentForm.section6.trainingQuestion}
                 </FieldLabel>
                 {TRAINING_OPTIONS.map(opt => (
                   <Field
@@ -734,8 +773,8 @@ export function RecruitmentFormFields({
 
       <SectionCard
         number={7}
-        title="Upload hồ sơ đầu vào"
-        description={`Đính kèm hình ảnh hoặc tài liệu liên quan (CCCD, bằng cấp, CV...). Tối đa ${MAX_FILES} file, mỗi file không quá 5MB. Hỗ trợ: Hình ảnh JPG, Hình ảnh PNG, Hình ảnh WEBP, Hình ảnh HEIC, Tài liệu PDF, Tài liệu DOC, Tài liệu DOCX.`}
+        title={t.recruitmentForm.section7.title}
+        description={t.recruitmentForm.section7.description(MAX_FILES)}
       >
         <Field>
           <label
@@ -750,9 +789,11 @@ export function RecruitmentFormFields({
             ) : (
               <IconCloudUpload className="text-muted-foreground size-6" />
             )}
-            <span className="text-sm font-medium">Nhấp để chọn file</span>
+            <span className="text-sm font-medium">
+              {t.recruitmentForm.section7.dropzoneTitle}
+            </span>
             <span className="text-muted-foreground text-xs">
-              Hình ảnh hoặc tài liệu (PDF, DOC, DOCX)
+              {t.recruitmentForm.section7.dropzoneSubtitle}
             </span>
             <input
               type="file"
@@ -787,7 +828,9 @@ export function RecruitmentFormFields({
                         className="text-muted-foreground hover:text-foreground"
                       >
                         <IconDownload className="size-4" />
-                        <span className="sr-only">Tải xuống</span>
+                        <span className="sr-only">
+                          {t.recruitmentForm.section7.downloadSr}
+                        </span>
                       </button>
                     )}
                     <button
@@ -796,7 +839,9 @@ export function RecruitmentFormFields({
                       className="text-muted-foreground hover:text-foreground"
                     >
                       <IconX className="size-4" />
-                      <span className="sr-only">Xóa tệp</span>
+                      <span className="sr-only">
+                        {t.recruitmentForm.section7.removeSr}
+                      </span>
                     </button>
                   </span>
                 </li>
@@ -806,7 +851,7 @@ export function RecruitmentFormFields({
         </Field>
       </SectionCard>
 
-      <SectionCard number={8} title="Cam kết của ứng viên">
+      <SectionCard number={8} title={t.recruitmentForm.section8.title}>
         <FieldGroup data-slot="checkbox-group">
           <Field orientation="horizontal" className="items-start">
             <Controller
@@ -821,9 +866,7 @@ export function RecruitmentFormFields({
               )}
             />
             <FieldLabel htmlFor="commitmentVoluntary" className="font-normal">
-              Tôi xác nhận việc tìm hiểu cơ hội nghề nghiệp này và ứng tuyển làm
-              đại lý tại MVI hoàn toàn là quyết định tự nguyện của cá nhân tôi,
-              không do bất kỳ cá nhân hay tổ chức nào chi phối.
+              {t.recruitmentForm.section8.voluntary}
             </FieldLabel>
           </Field>
           <FieldError
@@ -847,8 +890,7 @@ export function RecruitmentFormFields({
               )}
             />
             <FieldLabel htmlFor="commitmentDataConsent" className="font-normal">
-              Tôi đồng ý cho phép xử lý dữ liệu cá nhân (PDPD) để hệ thống thu
-              thập, lưu trữ và xử lý hồ sơ của tôi.
+              {t.recruitmentForm.section8.dataConsent}
             </FieldLabel>
           </Field>
           <FieldError
@@ -861,7 +903,7 @@ export function RecruitmentFormFields({
 
           <Field data-invalid={!!errors.signatureName}>
             <FieldLabel htmlFor="signatureName">
-              Họ và tên xác nhận (chữ ký điện tử) *
+              {t.recruitmentForm.section8.signature}
             </FieldLabel>
             <Input id="signatureName" {...register("signatureName")} />
             <FieldError

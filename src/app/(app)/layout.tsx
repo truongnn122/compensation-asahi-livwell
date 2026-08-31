@@ -23,9 +23,11 @@ import {
 
 import { getPreference } from "@/server/server-actions";
 import { getSessionUser } from "@/lib/firebase/session";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SearchDialog } from "@/components/search-dialog";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { LayoutControls } from "@/components/layout-controls";
 import { AuthStoreProvider } from "@/stores/auth/auth-provider";
 
@@ -35,9 +37,14 @@ export default async function Layout({
   const sessionUser = await getSessionUser();
   if (!sessionUser) redirect("/login");
 
+  const dict = await getDictionary();
+
   const user: TUser = {
     uid: sessionUser.uid,
-    name: sessionUser.name ?? sessionUser.email?.split("@")[0] ?? "User",
+    name:
+      sessionUser.name ??
+      sessionUser.email?.split("@")[0] ??
+      dict.common.userFallback,
     email: sessionUser.email ?? "",
     avatar: sessionUser.picture,
   };
@@ -114,6 +121,7 @@ export default async function Layout({
                 <SearchDialog />
               </div>
               <div className="flex items-center gap-2">
+                <LanguageSwitcher />
                 <LayoutControls {...layoutPreferences} />
                 <ThemeSwitcher />
               </div>

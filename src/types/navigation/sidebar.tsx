@@ -1,5 +1,6 @@
 import { type LucideIcon, UserCheck, Users } from "lucide-react";
 
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { canAccessUsers, type Role } from "@/lib/permissions";
 
 export interface NavSubItem {
@@ -27,13 +28,13 @@ export interface NavGroup {
   items: NavMainItem[];
 }
 
-export function getSidebarItems(role: Role): NavGroup[] {
+export function getSidebarItems(role: Role, t: Dictionary): NavGroup[] {
   const items: NavMainItem[] = [
-    { title: "Ứng viên tuyển dụng", url: "/recruitments", icon: UserCheck },
+    { title: t.nav.recruitments, url: "/recruitments", icon: UserCheck },
   ];
 
   if (canAccessUsers(role)) {
-    items.push({ title: "Người dùng", url: "/users", icon: Users });
+    items.push({ title: t.nav.users, url: "/users", icon: Users });
   }
 
   return [{ id: 1, items }];

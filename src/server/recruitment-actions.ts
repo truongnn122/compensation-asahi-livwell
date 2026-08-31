@@ -4,10 +4,11 @@ import { randomUUID } from "crypto";
 
 import { adminDb, adminStorage } from "@/lib/firebase/admin";
 import { getSessionUser } from "@/lib/firebase/session";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { canAccessRecruitments } from "@/lib/permissions";
 import { ActionResult } from "@/lib/types";
 import {
-  recruitmentSchema,
+  buildRecruitmentSchema,
   type RecruitmentValues,
 } from "@/lib/validations/recruitment";
 
@@ -23,15 +24,16 @@ export type TRecruitmentSubmission = RecruitmentValues & {
 };
 
 async function requireRecruitmentAccess() {
+  const dict = await getDictionary();
   const user = await getSessionUser();
-  if (!user) return { ok: false as const, error: "Not authenticated." };
+  if (!user) return { ok: false as const, error: dict.errors.notAuthenticated };
   if (!canAccessRecruitments(user.role)) {
     return {
       ok: false as const,
-      error: "Bạn không có quyền thực hiện thao tác này.",
+      error: dict.errors.forbidden,
     };
   }
-  return { ok: true as const, user };
+  return { ok: true as const, user, dict };
 }
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const ALLOWED_CONTENT_TYPES = [
@@ -54,16 +56,17 @@ export type TAttachment = {
 export async function uploadRecruitmentAttachment(
   formData: FormData
 ): Promise<ActionResult<TAttachment>> {
+  const dict = await getDictionary();
   const file = formData.get("file");
   if (!(file instanceof File)) {
-    return { ok: false, error: "Không có tệp nào được chọn." };
+    return { ok: false, error: dict.errors.recruitment.noFileSelected };
   }
   if (file.size > MAX_UPLOAD_BYTES) {
-    return { ok: false, error: "Mỗi tệp tối đa 5MB." };
+    return { ok: false, error: dict.errors.recruitment.fileTooLarge };
   }
   const contentType = file.type || "application/octet-stream";
   if (!ALLOWED_CONTENT_TYPES.includes(contentType)) {
-    return { ok: false, error: "Định dạng tệp không được hỗ trợ." };
+    return { ok: false, error: dict.errors.recruitment.unsupportedFileType };
   }
 
   const storagePath = `recruitment/${randomUUID()}-${file.name}`;
@@ -79,16 +82,18 @@ export async function uploadRecruitmentAttachment(
       data: { storagePath, fileName: file.name, size: file.size, contentType },
     };
   } catch {
-    return { ok: false, error: "Không thể tải tệp lên." };
+    return { ok: false, error: dict.errors.recruitment.uploadFailed };
   }
 }
 
 export async function submitRecruitmentForm(
   values: RecruitmentValues
 ): Promise<ActionResult<{ id: string }>> {
-  const parsed = recruitmentSchema.safeParse(values);
+  const dict = await getDictionary();
+  const schema = buildRecruitmentSchema(dict.recruitmentForm.validation);
+  const parsed = schema.safeParse(values);
   if (!parsed.success) {
-    return { ok: false, error: "Dữ liệu không hợp lệ." };
+    return { ok: false, error: dict.errors.recruitment.invalidData };
   }
 
   try {
@@ -106,7 +111,7 @@ export async function submitRecruitmentForm(
   } catch {
     return {
       ok: false,
-      error: "Không thể gửi thông tin. Vui lòng thử lại sau.",
+      error: dict.errors.recruitment.submitFailed,
     };
   }
 }
@@ -116,6 +121,7 @@ export async function listRecruitmentSubmissions(): Promise<
 > {
   const check = await requireRecruitmentAccess();
   if (!check.ok) return check;
+  const { dict } = check;
 
   try {
     const snapshot = await adminDb
@@ -130,7 +136,7 @@ export async function listRecruitmentSubmissions(): Promise<
 
     return { ok: true, data: submissions };
   } catch {
-    return { ok: false, error: "Không thể tải danh sách ứng viên." };
+    return { ok: false, error: dict.errors.recruitment.listFailed };
   }
 }
 
@@ -139,11 +145,12 @@ export async function getRecruitmentSubmission(
 ): Promise<ActionResult<TRecruitmentSubmission>> {
   const check = await requireRecruitmentAccess();
   if (!check.ok) return check;
+  const { dict } = check;
 
   try {
     const doc = await adminDb.collection(COLLECTION).doc(id).get();
     if (!doc.exists) {
-      return { ok: false, error: "Không tìm thấy hồ sơ ứng viên." };
+      return { ok: false, error: dict.errors.recruitment.notFound };
     }
 
     return {
@@ -151,7 +158,7 @@ export async function getRecruitmentSubmission(
       data: { id: doc.id, ...doc.data() } as TRecruitmentSubmission,
     };
   } catch {
-    return { ok: false, error: "Không thể tải hồ sơ ứng viên." };
+    return { ok: false, error: dict.errors.recruitment.loadFailed };
   }
 }
 
@@ -161,17 +168,19 @@ export async function updateRecruitmentSubmission(
 ): Promise<ActionResult> {
   const check = await requireRecruitmentAccess();
   if (!check.ok) return check;
+  const { dict } = check;
 
-  const parsed = recruitmentSchema.safeParse(values);
+  const schema = buildRecruitmentSchema(dict.recruitmentForm.validation);
+  const parsed = schema.safeParse(values);
   if (!parsed.success) {
-    return { ok: false, error: "Dữ liệu không hợp lệ." };
+    return { ok: false, error: dict.errors.recruitment.invalidData };
   }
 
   try {
     await adminDb.collection(COLLECTION).doc(id).update(parsed.data);
     return { ok: true, data: null };
   } catch {
-    return { ok: false, error: "Không thể cập nhật hồ sơ ứng viên." };
+    return { ok: false, error: dict.errors.recruitment.updateFailed };
   }
 }
 
@@ -180,6 +189,7 @@ export async function getRecruitmentAttachmentUrl(
 ): Promise<ActionResult<{ url: string }>> {
   const check = await requireRecruitmentAccess();
   if (!check.ok) return check;
+  const { dict } = check;
 
   try {
     const [url] = await adminStorage
@@ -192,7 +202,7 @@ export async function getRecruitmentAttachmentUrl(
 
     return { ok: true, data: { url } };
   } catch {
-    return { ok: false, error: "Không thể tạo liên kết tải xuống." };
+    return { ok: false, error: dict.errors.recruitment.downloadUrlFailed };
   }
 }
 
@@ -202,16 +212,17 @@ export async function updateRecruitmentSubmissionStatus(
 ): Promise<ActionResult> {
   const check = await requireRecruitmentAccess();
   if (!check.ok) return check;
+  const { dict } = check;
 
   if (!STATUS_VALUES.includes(status as TRecruitmentStatus)) {
-    return { ok: false, error: "Trạng thái không hợp lệ." };
+    return { ok: false, error: dict.errors.recruitment.invalidStatus };
   }
 
   try {
     await adminDb.collection(COLLECTION).doc(id).update({ status });
     return { ok: true, data: null };
   } catch {
-    return { ok: false, error: "Không thể cập nhật trạng thái." };
+    return { ok: false, error: dict.errors.recruitment.statusUpdateFailed };
   }
 }
 
@@ -220,6 +231,7 @@ export async function deleteRecruitmentSubmission(
 ): Promise<ActionResult> {
   const check = await requireRecruitmentAccess();
   if (!check.ok) return check;
+  const { dict } = check;
 
   try {
     const ref = adminDb.collection(COLLECTION).doc(id);
@@ -239,6 +251,6 @@ export async function deleteRecruitmentSubmission(
 
     return { ok: true, data: null };
   } catch {
-    return { ok: false, error: "Không thể xóa hồ sơ ứng viên." };
+    return { ok: false, error: dict.errors.recruitment.deleteFailed };
   }
 }

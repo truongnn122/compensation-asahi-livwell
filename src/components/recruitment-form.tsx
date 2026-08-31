@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -8,16 +8,22 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import { RecruitmentFormFields } from "@/components/recruitment-form-fields";
+import { useDictionary } from "@/hooks/use-dictionary";
 import { submitRecruitmentForm } from "@/server/recruitment-actions";
 import type { TManagerOption } from "@/server/user-actions";
 import {
-  recruitmentSchema,
+  buildRecruitmentSchema,
   type RecruitmentValues,
 } from "@/lib/validations/recruitment";
 
 export function RecruitmentForm({ managers }: { managers: TManagerOption[] }) {
+  const t = useDictionary();
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const schema = useMemo(
+    () => buildRecruitmentSchema(t.recruitmentForm.validation),
+    [t]
+  );
   const {
     register,
     handleSubmit,
@@ -26,7 +32,7 @@ export function RecruitmentForm({ managers }: { managers: TManagerOption[] }) {
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<RecruitmentValues>({
-    resolver: zodResolver(recruitmentSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       pepStatus: "no",
       referralChannel: [],
@@ -50,10 +56,11 @@ export function RecruitmentForm({ managers }: { managers: TManagerOption[] }) {
   if (submitted) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-xl border bg-card p-10 text-center shadow-sm">
-        <h2 className="text-xl font-semibold">Cảm ơn bạn!</h2>
+        <h2 className="text-xl font-semibold">
+          {t.recruitmentForm.thankYouTitle}
+        </h2>
         <p className="text-muted-foreground max-w-md text-sm">
-          Thông tin ứng tuyển của bạn đã được gửi thành công. Đội ngũ tuyển dụng
-          Asahi Livwell sẽ liên hệ với bạn trong thời gian sớm nhất.
+          {t.recruitmentForm.thankYouBody}
         </p>
       </div>
     );
@@ -73,7 +80,7 @@ export function RecruitmentForm({ managers }: { managers: TManagerOption[] }) {
       <FieldError>{formError}</FieldError>
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Đang gửi..." : "Gửi phiếu thông tin"}
+        {isSubmitting ? t.recruitmentForm.submitting : t.recruitmentForm.submit}
       </Button>
     </form>
   );

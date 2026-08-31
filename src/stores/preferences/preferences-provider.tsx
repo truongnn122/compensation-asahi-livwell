@@ -13,14 +13,20 @@ export const PreferencesStoreProvider = ({
   children,
   themeMode,
   themePreset,
+  language,
 }: {
   children: React.ReactNode;
   themeMode: PreferencesState["themeMode"];
   themePreset: PreferencesState["themePreset"];
+  language: PreferencesState["language"];
 }) => {
   const storeRef = useRef<StoreApi<PreferencesState> | null>(null);
 
-  storeRef.current ??= createPreferencesStore({ themeMode, themePreset });
+  storeRef.current ??= createPreferencesStore({
+    themeMode,
+    themePreset,
+    language,
+  });
 
   return (
     <PreferencesStoreContext.Provider value={storeRef.current}>

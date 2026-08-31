@@ -5,6 +5,7 @@ import { useRef, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
+import { useDictionary } from "@/hooks/use-dictionary";
 import { uploadDocument, type TDocument } from "@/server/documents-actions";
 
 export function DocumentUpload({
@@ -12,6 +13,7 @@ export function DocumentUpload({
 }: {
   onUploaded: (document: TDocument) => void;
 }) {
+  const t = useDictionary();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -25,7 +27,7 @@ export function DocumentUpload({
     startTransition(async () => {
       const result = await uploadDocument(formData);
       if (result.ok) {
-        toast.success(`Đã tải lên ${result.data.fileName}`);
+        toast.success(t.documents.uploaded(result.data.fileName));
         onUploaded(result.data);
       } else {
         toast.error(result.error);

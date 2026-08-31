@@ -22,6 +22,7 @@ import {
   type UserFormValues,
 } from "@/components/user-form-dialog";
 import { createUsersColumns } from "@/components/users-columns";
+import { useDictionary } from "@/hooks/use-dictionary";
 import {
   createUser,
   deleteUser,
@@ -30,6 +31,7 @@ import {
 } from "@/server/user-actions";
 
 export function UsersView({ initialUsers }: { initialUsers: TAppUser[] }) {
+  const t = useDictionary();
   const [users, setUsers] = useState(initialUsers);
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<TAppUser | null>(null);
@@ -65,7 +67,7 @@ export function UsersView({ initialUsers }: { initialUsers: TAppUser[] }) {
               : u
           )
         );
-        toast.success("Đã cập nhật người dùng");
+        toast.success(t.users.updated);
       } else {
         const createValues = values as UserFormValues;
         const result = await createUser(createValues);
@@ -74,7 +76,7 @@ export function UsersView({ initialUsers }: { initialUsers: TAppUser[] }) {
           return;
         }
         setUsers(prev => [result.data, ...prev]);
-        toast.success("Đã tạo người dùng");
+        toast.success(t.users.created);
       }
       setFormOpen(false);
     } finally {
@@ -93,11 +95,12 @@ export function UsersView({ initialUsers }: { initialUsers: TAppUser[] }) {
       setUsers(prev => [target, ...prev]);
       toast.error(result.error);
     } else {
-      toast.success("Đã xóa người dùng");
+      toast.success(t.users.deleted);
     }
   };
 
   const columns = createUsersColumns({
+    t,
     onEdit: openEdit,
     onDelete: setDeletingUser,
   });
@@ -105,13 +108,13 @@ export function UsersView({ initialUsers }: { initialUsers: TAppUser[] }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        <Button onClick={openCreate}>Thêm người dùng</Button>
+        <Button onClick={openCreate}>{t.users.addButton}</Button>
       </div>
 
       <DataTable
         data={users.map(u => ({ ...u, id: u.uid }))}
         columns={columns}
-        emptyMessage="Chưa có người dùng nào."
+        emptyMessage={t.users.empty}
         enableColumnVisibility={false}
       />
 
@@ -129,15 +132,20 @@ export function UsersView({ initialUsers }: { initialUsers: TAppUser[] }) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xóa người dùng?</AlertDialogTitle>
+            <AlertDialogTitle>{t.users.deleteDialogTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              Tài khoản của {deletingUser?.name} ({deletingUser?.email}) sẽ bị
-              xóa vĩnh viễn. Hành động này không thể hoàn tác.
+              {deletingUser &&
+                t.users.deleteDialogDescription(
+                  deletingUser.name,
+                  deletingUser.email
+                )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Xóa</AlertDialogAction>
+            <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              {t.common.delete}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

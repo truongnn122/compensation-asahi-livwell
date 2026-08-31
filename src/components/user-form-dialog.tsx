@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
@@ -29,17 +29,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ROLE_OPTIONS } from "@/lib/permissions";
+import { useDictionary } from "@/hooks/use-dictionary";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { TAppUser } from "@/server/user-actions";
 
-const formSchema = z.object({
-  email: z.string(),
-  password: z.string(),
-  name: z.string().min(1, "Vui lòng nhập tên"),
-  role: z.enum(["admin", "ad"]),
-});
+function buildUserFormSchema(t: Dictionary) {
+  return z.object({
+    email: z.string(),
+    password: z.string(),
+    name: z.string().min(1, t.users.form.nameRequired),
+    role: z.enum(["admin", "ad"]),
+  });
+}
 
-export type UserFormValues = z.infer<typeof formSchema>;
+export type UserFormValues = z.infer<ReturnType<typeof buildUserFormSchema>>;
 export type UserEditValues = UserFormValues;
 
 export function UserFormDialog({
@@ -55,7 +58,9 @@ export function UserFormDialog({
   onSubmit: (values: UserFormValues | UserEditValues) => Promise<void>;
   isSubmitting: boolean;
 }) {
+  const t = useDictionary();
   const isEdit = !!user;
+  const schema = useMemo(() => buildUserFormSchema(t), [t]);
   const {
     register,
     handleSubmit,
@@ -63,7 +68,7 @@ export function UserFormDialog({
     reset,
     formState: { errors },
   } = useForm<UserFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(schema),
     defaultValues: { role: "ad", email: "", password: "", name: "" },
   });
 
@@ -88,19 +93,19 @@ export function UserFormDialog({
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>
-              {isEdit ? "Chỉnh sửa người dùng" : "Thêm người dùng"}
+              {isEdit ? t.users.form.editTitle : t.users.form.createTitle}
             </DialogTitle>
             <DialogDescription>
               {isEdit
-                ? "Cập nhật tên và vai trò của người dùng."
-                : "Tạo tài khoản đăng nhập mới cho hệ thống."}
+                ? t.users.form.editDescription
+                : t.users.form.createDescription}
             </DialogDescription>
           </DialogHeader>
 
           <FieldGroup className="py-4">
             {!isEdit && (
               <Field data-invalid={!!errors.email}>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel htmlFor="email">{t.users.form.email}</FieldLabel>
                 <Input
                   id="email"
                   type="email"
@@ -114,7 +119,9 @@ export function UserFormDialog({
             )}
             {!isEdit && (
               <Field data-invalid={!!errors.password}>
-                <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
+                <FieldLabel htmlFor="password">
+                  {t.users.form.password}
+                </FieldLabel>
                 <Input
                   id="password"
                   type="password"
@@ -128,26 +135,28 @@ export function UserFormDialog({
               </Field>
             )}
             <Field data-invalid={!!errors.name}>
-              <FieldLabel htmlFor="name">Họ và tên</FieldLabel>
+              <FieldLabel htmlFor="name">{t.users.form.name}</FieldLabel>
               <Input id="name" {...register("name")} />
               <FieldError errors={errors.name ? [errors.name] : undefined} />
             </Field>
             <Field data-invalid={!!errors.role}>
-              <FieldLabel>Vai trò</FieldLabel>
+              <FieldLabel>{t.users.form.role}</FieldLabel>
               <Controller
                 control={control}
                 name="role"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Chọn vai trò" />
+                      <SelectValue placeholder={t.users.form.rolePlaceholder} />
                     </SelectTrigger>
                     <SelectContent>
-                      {ROLE_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
+                      {Object.entries(t.permissions.roleLabels).map(
+                        ([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        )
+                      )}
                     </SelectContent>
                   </Select>
                 )}
@@ -158,7 +167,7 @@ export function UserFormDialog({
 
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Đang lưu..." : "Lưu"}
+              {isSubmitting ? t.users.form.saving : t.users.form.save}
             </Button>
           </DialogFooter>
         </form>

@@ -1,16 +1,6 @@
 export const ROLE_VALUES = ["admin", "ad"] as const;
 export type Role = (typeof ROLE_VALUES)[number];
 
-export const ROLE_OPTIONS: { value: Role; label: string }[] = [
-  { value: "admin", label: "Quản trị" },
-  { value: "ad", label: "Quản lý Đại lý" },
-];
-
-export const ROLE_LABELS: Record<Role, string> = {
-  admin: "Quản trị",
-  ad: "Quản lý Đại lý",
-};
-
 export function isRole(value: string): value is Role {
   return (ROLE_VALUES as readonly string[]).includes(value);
 }

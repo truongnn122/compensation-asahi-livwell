@@ -29,16 +29,20 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NavGroup, NavMainItem } from "@/types/navigation/sidebar";
+import { useDictionary } from "@/hooks/use-dictionary";
 
 interface NavMainProps {
   readonly items: readonly NavGroup[];
 }
 
-const IsComingSoon = () => (
-  <span className="ml-auto rounded-md bg-gray-200 px-2 py-1 text-xs dark:text-gray-800">
-    Soon
-  </span>
-);
+const IsComingSoon = () => {
+  const t = useDictionary();
+  return (
+    <span className="ml-auto rounded-md bg-gray-200 px-2 py-1 text-xs dark:text-gray-800">
+      {t.nav.soon}
+    </span>
+  );
+};
 
 const NavItemExpanded = ({
   item,

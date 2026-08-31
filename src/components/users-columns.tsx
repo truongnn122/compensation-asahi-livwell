@@ -5,36 +5,40 @@ import type { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ROLE_LABELS } from "@/lib/permissions";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { formatDate } from "@/lib/utils";
 import type { TAppUser } from "@/server/user-actions";
 
 export function createUsersColumns({
+  t,
   onEdit,
   onDelete,
 }: {
+  t: Dictionary;
   onEdit: (user: TAppUser) => void;
   onDelete: (user: TAppUser) => void;
 }): ColumnDef<TAppUser & { id: string }>[] {
   return [
     {
       accessorKey: "name",
-      header: "Họ và tên",
+      header: t.users.columns.name,
     },
     {
       accessorKey: "email",
-      header: "Email",
+      header: t.users.columns.email,
     },
     {
       accessorKey: "role",
-      header: "Vai trò",
+      header: t.users.columns.role,
       cell: ({ row }) => (
-        <Badge variant="secondary">{ROLE_LABELS[row.original.role]}</Badge>
+        <Badge variant="secondary">
+          {t.permissions.roleLabels[row.original.role]}
+        </Badge>
       ),
     },
     {
       accessorKey: "createdAt",
-      header: "Ngày tạo",
+      header: t.users.columns.createdAt,
       cell: ({ row }) => formatDate(row.original.createdAt),
     },
     {
@@ -48,7 +52,7 @@ export function createUsersColumns({
             onClick={() => onEdit(row.original)}
           >
             <IconEdit className="size-4" />
-            <span className="sr-only">Chỉnh sửa</span>
+            <span className="sr-only">{t.users.editSr}</span>
           </Button>
           <Button
             variant="ghost"
@@ -56,7 +60,7 @@ export function createUsersColumns({
             onClick={() => onDelete(row.original)}
           >
             <IconTrash className="size-4" />
-            <span className="sr-only">Xóa</span>
+            <span className="sr-only">{t.users.deleteSr}</span>
           </Button>
         </div>
       ),

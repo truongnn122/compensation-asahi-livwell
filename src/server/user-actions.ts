@@ -2,6 +2,7 @@
 
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { getSessionUser } from "@/lib/firebase/session";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { isRole, type Role } from "@/lib/permissions";
 import { ActionResult } from "@/lib/types";
 
@@ -16,15 +17,16 @@ export type TAppUser = {
 };
 
 async function requireAdmin() {
+  const dict = await getDictionary();
   const user = await getSessionUser();
-  if (!user) return { ok: false as const, error: "Not authenticated." };
+  if (!user) return { ok: false as const, error: dict.errors.notAuthenticated };
   if (user.role !== "admin") {
     return {
       ok: false as const,
-      error: "Bạn không có quyền thực hiện thao tác này.",
+      error: dict.errors.forbidden,
     };
   }
-  return { ok: true as const, user };
+  return { ok: true as const, user, dict };
 }
 
 export type TManagerOption = { uid: string; name: string };
@@ -38,6 +40,7 @@ export type TManagerOption = { uid: string; name: string };
 export async function listRecruitmentManagers(): Promise<
   ActionResult<TManagerOption[]>
 > {
+  const dict = await getDictionary();
   try {
     // Sorted client-side rather than via .orderBy("name") to avoid needing
     // a composite Firestore index for this where+orderBy combination — the
@@ -53,13 +56,14 @@ export async function listRecruitmentManagers(): Promise<
 
     return { ok: true, data: managers };
   } catch {
-    return { ok: false, error: "Không thể tải danh sách quản lý." };
+    return { ok: false, error: dict.errors.users.managerListFailed };
   }
 }
 
 export async function listUsers(): Promise<ActionResult<TAppUser[]>> {
   const check = await requireAdmin();
   if (!check.ok) return check;
+  const { dict } = check;
 
   try {
     const snapshot = await adminDb
@@ -74,7 +78,7 @@ export async function listUsers(): Promise<ActionResult<TAppUser[]>> {
 
     return { ok: true, data: users };
   } catch {
-    return { ok: false, error: "Không thể tải danh sách người dùng." };
+    return { ok: false, error: dict.errors.users.listFailed };
   }
 }
 
@@ -86,12 +90,13 @@ export async function createUser(input: {
 }): Promise<ActionResult<TAppUser>> {
   const check = await requireAdmin();
   if (!check.ok) return check;
+  const { dict } = check;
 
   if (!isRole(input.role)) {
-    return { ok: false, error: "Vai trò không hợp lệ." };
+    return { ok: false, error: dict.errors.users.invalidRole };
   }
   if (input.password.length < 8) {
-    return { ok: false, error: "Mật khẩu phải có ít nhất 8 ký tự." };
+    return { ok: false, error: dict.errors.users.passwordTooShort };
   }
 
   try {
@@ -122,9 +127,9 @@ export async function createUser(input: {
   } catch (error) {
     const code = (error as { code?: string }).code;
     if (code === "auth/email-already-exists") {
-      return { ok: false, error: "Email này đã được sử dụng." };
+      return { ok: false, error: dict.errors.users.emailInUse };
     }
-    return { ok: false, error: "Không thể tạo người dùng." };
+    return { ok: false, error: dict.errors.users.createFailed };
   }
 }
 
@@ -134,9 +139,10 @@ export async function updateUser(
 ): Promise<ActionResult> {
   const check = await requireAdmin();
   if (!check.ok) return check;
+  const { dict } = check;
 
   if (!isRole(input.role)) {
-    return { ok: false, error: "Vai trò không hợp lệ." };
+    return { ok: false, error: dict.errors.users.invalidRole };
   }
 
   try {
@@ -148,16 +154,17 @@ export async function updateUser(
 
     return { ok: true, data: null };
   } catch {
-    return { ok: false, error: "Không thể cập nhật người dùng." };
+    return { ok: false, error: dict.errors.users.updateFailed };
   }
 }
 
 export async function deleteUser(uid: string): Promise<ActionResult> {
   const check = await requireAdmin();
   if (!check.ok) return check;
+  const { dict } = check;
 
   if (uid === check.user.uid) {
-    return { ok: false, error: "Bạn không thể xóa chính tài khoản của mình." };
+    return { ok: false, error: dict.errors.users.cannotDeleteSelf };
   }
 
   try {
@@ -165,6 +172,6 @@ export async function deleteUser(uid: string): Promise<ActionResult> {
     await adminAuth.deleteUser(uid);
     return { ok: true, data: null };
   } catch {
-    return { ok: false, error: "Không thể xóa người dùng." };
+    return { ok: false, error: dict.errors.users.deleteFailed };
   }
 }

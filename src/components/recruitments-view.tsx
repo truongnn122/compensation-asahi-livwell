@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DataTable } from "@/components/ui/data-table/data-table";
 import { createRecruitmentsColumns } from "@/components/recruitments-columns";
+import { useDictionary } from "@/hooks/use-dictionary";
 import {
   deleteRecruitmentSubmission,
   type TRecruitmentSubmission,
@@ -26,6 +27,7 @@ export function RecruitmentsView({
 }: {
   initialSubmissions: TRecruitmentSubmission[];
 }) {
+  const t = useDictionary();
   const [submissions, setSubmissions] = useState(initialSubmissions);
   const [deleting, setDeleting] = useState<TRecruitmentSubmission | null>(null);
 
@@ -40,11 +42,12 @@ export function RecruitmentsView({
       setSubmissions(prev => [target, ...prev]);
       toast.error(result.error);
     } else {
-      toast.success("Đã xóa hồ sơ ứng viên");
+      toast.success(t.recruitmentsList.deleted);
     }
   };
 
   const columns = createRecruitmentsColumns({
+    t,
     onDelete: setDeleting,
   });
 
@@ -53,7 +56,7 @@ export function RecruitmentsView({
       <DataTable
         data={submissions.map(s => ({ ...s, id: s.id }))}
         columns={columns}
-        emptyMessage="Chưa có hồ sơ ứng viên nào."
+        emptyMessage={t.recruitmentsList.empty}
         enableColumnVisibility={false}
       />
 
@@ -63,15 +66,18 @@ export function RecruitmentsView({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xóa hồ sơ ứng viên?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t.recruitmentsList.deleteDialogTitle}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Hồ sơ của {deleting?.fullName} sẽ bị xóa vĩnh viễn, bao gồm mọi
-              tệp đính kèm. Hành động này không thể hoàn tác.
+              {t.recruitmentsList.deleteDialogDescription(deleting?.fullName)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Xóa</AlertDialogAction>
+            <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              {t.common.delete}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

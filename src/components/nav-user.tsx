@@ -37,12 +37,14 @@ import { updateThemeMode } from "@/lib/theme-utils";
 import { setValueToCookie } from "@/server/server-actions";
 import { endSession } from "@/server/auth-actions";
 import { auth } from "@/lib/firebase/client";
+import { useDictionary } from "@/hooks/use-dictionary";
 
 export function NavUser({ user }: { user: TUser }) {
   const { isMobile } = useSidebar();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const initials = getInitials(user.name);
+  const t = useDictionary();
 
   const themeMode = usePreferencesStore(s => s.themeMode);
   const setThemeMode = usePreferencesStore(s => s.setThemeMode);
@@ -143,7 +145,7 @@ export function NavUser({ user }: { user: TUser }) {
                   ) : (
                     <IconSun className="size-4" />
                   )}
-                  Giao diện
+                  {t.navUser.appearance}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
@@ -151,16 +153,16 @@ export function NavUser({ user }: { user: TUser }) {
                       onClick={() => handleValueChange("light")}
                     >
                       <IconSun className="size-4" />
-                      Sáng
+                      {t.navUser.light}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleValueChange("dark")}>
                       <IconMoon className="size-4" />
-                      Tối
+                      {t.navUser.dark}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => handleValueChange("system")}
                     >
-                      Hệ thống
+                      {t.navUser.system}
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
@@ -169,7 +171,7 @@ export function NavUser({ user }: { user: TUser }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
               <IconLogout className="size-4" />
-              Đăng xuất
+              {t.navUser.logout}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { RecruitmentForm } from "@/components/recruitment-form";
 import { listRecruitmentManagers } from "@/server/user-actions";
 
-export const metadata: Metadata = {
-  title: "Phiếu thông tin tuyển dụng",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const dict = await getDictionary();
+  return { title: dict.pages.recruitmentPublic.title };
+}
 
 export default async function RecruitmentPage() {
+  const dict = await getDictionary();
   const result = await listRecruitmentManagers();
   const managers = result.ok ? result.data : [];
 
@@ -30,23 +33,22 @@ export default async function RecruitmentPage() {
           <div className="flex w-full items-center justify-between gap-3">
             <Image
               src="/brand/logo/ASAHI_HORIZONTAL_VECTOR.svg"
-              alt="Asahi Livwell"
+              alt={dict.pages.recruitmentPublic.logoAlt}
               width={124}
               height={51}
               className="h-9 w-auto"
               priority
             />
             <p className="text-xs font-medium tracking-widest text-white/70 uppercase">
-              Asahi – Hồ sơ đại lý · CT-01
+              {dict.pages.recruitmentPublic.kicker}
             </p>
           </div>
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl font-semibold text-balance sm:text-3xl">
-              Phiếu thông tin tuyển dụng &amp; sàng lọc ứng viên
+              {dict.pages.recruitmentPublic.heading}
             </h1>
             <p className="mx-auto max-w-xl text-sm text-white/70">
-              Vui lòng điền đầy đủ và chính xác thông tin bên dưới. Các trường
-              có dấu * là bắt buộc.
+              {dict.pages.recruitmentPublic.subtitle}
             </p>
           </div>
         </div>

@@ -10,6 +10,7 @@ import {
   ThemeMode,
   ThemePreset,
 } from "@/types/preferences/theme";
+import { LANGUAGE_VALUES, Language } from "@/types/preferences/language";
 import { getPreference } from "@/server/server-actions";
 import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
 
@@ -46,10 +47,15 @@ export default async function RootLayout({
     THEME_PRESET_VALUES,
     "asahi-livwell"
   );
+  const language = await getPreference<Language>(
+    "language",
+    LANGUAGE_VALUES,
+    "vi"
+  );
 
   return (
     <html
-      lang="en"
+      lang={language}
       className={themeMode === "dark" ? "dark" : ""}
       data-theme-preset={themePreset}
       suppressHydrationWarning
@@ -60,6 +66,7 @@ export default async function RootLayout({
         <PreferencesStoreProvider
           themeMode={themeMode}
           themePreset={themePreset}
+          language={language}
         >
           {children}
           <Toaster />

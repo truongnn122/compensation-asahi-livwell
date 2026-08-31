@@ -17,12 +17,15 @@ import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
 import { getSidebarItems } from "@/types/navigation/sidebar";
 import type { Role } from "@/lib/permissions";
+import { useDictionary } from "@/hooks/use-dictionary";
 
 export function AppSidebar({
   user,
   role,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { user: TUser; role: Role }) {
+  const t = useDictionary();
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -47,7 +50,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={getSidebarItems(role)} />
+        <NavMain items={getSidebarItems(role, t)} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

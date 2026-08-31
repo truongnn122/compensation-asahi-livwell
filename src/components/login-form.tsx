@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,24 +16,30 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useDictionary } from "@/hooks/use-dictionary";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { auth } from "@/lib/firebase/client";
 import { establishSession } from "@/server/auth-actions";
 
-const loginSchema = z.object({
-  email: z.email("Vui lòng nhập địa chỉ email hợp lệ"),
-  password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
-});
+function buildLoginSchema(t: Dictionary) {
+  return z.object({
+    email: z.email(t.auth.login.validation.email),
+    password: z.string().min(8, t.auth.login.validation.password),
+  });
+}
 
-type LoginValues = z.infer<typeof loginSchema>;
+type LoginValues = z.infer<ReturnType<typeof buildLoginSchema>>;
 
 export function LoginForm() {
   const router = useRouter();
+  const t = useDictionary();
   const [formError, setFormError] = useState<string | null>(null);
+  const schema = useMemo(() => buildLoginSchema(t), [t]);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
+  } = useForm<LoginValues>({ resolver: zodResolver(schema) });
 
   const onSubmit = async (values: LoginValues) => {
     setFormError(null);
@@ -54,7 +60,7 @@ export function LoginForm() {
       router.push("/recruitments");
       router.refresh();
     } catch {
-      setFormError("Email hoặc mật khẩu không đúng.");
+      setFormError(t.auth.login.invalidCredentials);
     }
   };
 
@@ -62,14 +68,14 @@ export function LoginForm() {
     <form onSubmit={handleSubmit(onSubmit)}>
       <FieldGroup>
         <div className="flex flex-col gap-1 text-center">
-          <h1 className="text-xl font-semibold">Đăng nhập</h1>
+          <h1 className="text-xl font-semibold">{t.auth.login.heading}</h1>
           <p className="text-muted-foreground text-sm">
-            Nhập email và mật khẩu để truy cập tài khoản của bạn.
+            {t.auth.login.subtitle}
           </p>
         </div>
 
         <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <FieldLabel htmlFor="email">{t.auth.login.email}</FieldLabel>
           <Input
             id="email"
             type="email"
@@ -81,7 +87,7 @@ export function LoginForm() {
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
+          <FieldLabel htmlFor="password">{t.auth.login.password}</FieldLabel>
           <Input
             id="password"
             type="password"
@@ -97,7 +103,7 @@ export function LoginForm() {
         <FieldError>{formError}</FieldError>
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
+          {isSubmitting ? t.auth.login.submitting : t.auth.login.submit}
         </Button>
       </FieldGroup>
     </form>

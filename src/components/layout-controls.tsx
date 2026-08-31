@@ -21,6 +21,7 @@ import { updateContentLayout, updateNavbarStyle } from "@/lib/layout-utils";
 import { updateThemeMode, updateThemePreset } from "@/lib/theme-utils";
 import { setValueToCookie } from "@/server/server-actions";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
+import { useDictionary } from "@/hooks/use-dictionary";
 import {
   ContentLayout,
   NavbarStyle,
@@ -42,6 +43,7 @@ type LayoutControlsProps = {
 
 export function LayoutControls(props: LayoutControlsProps) {
   const { variant, collapsible, contentLayout, navbarStyle } = props;
+  const t = useDictionary();
 
   const themeMode = usePreferencesStore(s => s.themeMode);
   const setThemeMode = usePreferencesStore(s => s.setThemeMode);
@@ -79,14 +81,18 @@ export function LayoutControls(props: LayoutControlsProps) {
       <PopoverContent align="end">
         <div className="flex flex-col gap-5">
           <div className="space-y-1.5">
-            <h4 className="text-sm leading-none font-medium">Cài đặt bố cục</h4>
+            <h4 className="text-sm leading-none font-medium">
+              {t.layoutControls.heading}
+            </h4>
             <p className="text-muted-foreground text-xs">
-              Tùy chỉnh tùy chọn bố cục bảng điều khiển của bạn.
+              {t.layoutControls.description}
             </p>
           </div>
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Chủ đề</Label>
+              <Label className="text-xs font-medium">
+                {t.layoutControls.theme}
+              </Label>
               <Select
                 value={themePreset}
                 onValueChange={value =>
@@ -94,7 +100,7 @@ export function LayoutControls(props: LayoutControlsProps) {
                 }
               >
                 <SelectTrigger size="sm" className="w-full text-xs">
-                  <SelectValue placeholder="Chủ đề" />
+                  <SelectValue placeholder={t.layoutControls.theme} />
                 </SelectTrigger>
                 <SelectContent>
                   {THEME_PRESET_OPTIONS.map(preset => (
@@ -120,7 +126,9 @@ export function LayoutControls(props: LayoutControlsProps) {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Chế độ</Label>
+              <Label className="text-xs font-medium">
+                {t.layoutControls.mode}
+              </Label>
               <ToggleGroup
                 className="w-full **:data-[slot=toggle-group-item]:flex-1 **:data-[slot=toggle-group-item]:text-xs"
                 size="sm"
@@ -129,17 +137,25 @@ export function LayoutControls(props: LayoutControlsProps) {
                 value={themeMode}
                 onValueChange={value => handleValueChange("theme_mode", value)}
               >
-                <ToggleGroupItem value="light" aria-label="Toggle inset">
-                  Sáng
+                <ToggleGroupItem
+                  value="light"
+                  aria-label={t.layoutControls.toggleInset}
+                >
+                  {t.layoutControls.light}
                 </ToggleGroupItem>
-                <ToggleGroupItem value="dark" aria-label="Toggle sidebar">
-                  Tối
+                <ToggleGroupItem
+                  value="dark"
+                  aria-label={t.layoutControls.toggleSidebar}
+                >
+                  {t.layoutControls.dark}
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Kiểu thanh bên</Label>
+              <Label className="text-xs font-medium">
+                {t.layoutControls.sidebarStyle}
+              </Label>
               <ToggleGroup
                 className="w-full **:data-[slot=toggle-group-item]:flex-1 **:data-[slot=toggle-group-item]:text-xs"
                 size="sm"
@@ -150,21 +166,30 @@ export function LayoutControls(props: LayoutControlsProps) {
                   handleValueChange("sidebar_variant", value)
                 }
               >
-                <ToggleGroupItem value="inset" aria-label="Toggle inset">
-                  Thụt vào
+                <ToggleGroupItem
+                  value="inset"
+                  aria-label={t.layoutControls.toggleInset}
+                >
+                  {t.layoutControls.inset}
                 </ToggleGroupItem>
-                <ToggleGroupItem value="sidebar" aria-label="Toggle sidebar">
-                  Thanh bên
+                <ToggleGroupItem
+                  value="sidebar"
+                  aria-label={t.layoutControls.toggleSidebar}
+                >
+                  {t.layoutControls.sidebar}
                 </ToggleGroupItem>
-                <ToggleGroupItem value="floating" aria-label="Toggle floating">
-                  Nổi
+                <ToggleGroupItem
+                  value="floating"
+                  aria-label={t.layoutControls.toggleFloating}
+                >
+                  {t.layoutControls.floating}
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
               <Label className="text-xs font-medium">
-                Kiểu thanh điều hướng
+                {t.layoutControls.navbarStyle}
               </Label>
               <ToggleGroup
                 className="w-full **:data-[slot=toggle-group-item]:flex-1 **:data-[slot=toggle-group-item]:text-xs"
@@ -176,17 +201,25 @@ export function LayoutControls(props: LayoutControlsProps) {
                   handleValueChange("navbar_style", value)
                 }
               >
-                <ToggleGroupItem value="sticky" aria-label="Toggle sticky">
-                  Dính
+                <ToggleGroupItem
+                  value="sticky"
+                  aria-label={t.layoutControls.toggleSticky}
+                >
+                  {t.layoutControls.sticky}
                 </ToggleGroupItem>
-                <ToggleGroupItem value="scroll" aria-label="Toggle scroll">
-                  Cuộn
+                <ToggleGroupItem
+                  value="scroll"
+                  aria-label={t.layoutControls.toggleScroll}
+                >
+                  {t.layoutControls.scroll}
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Thu gọn thanh bên</Label>
+              <Label className="text-xs font-medium">
+                {t.layoutControls.collapseSidebar}
+              </Label>
               <ToggleGroup
                 className="w-full **:data-[slot=toggle-group-item]:flex-1 **:data-[slot=toggle-group-item]:text-xs"
                 size="sm"
@@ -197,20 +230,25 @@ export function LayoutControls(props: LayoutControlsProps) {
                   handleValueChange("sidebar_collapsible", value)
                 }
               >
-                <ToggleGroupItem value="icon" aria-label="Toggle icon">
-                  Biểu tượng
+                <ToggleGroupItem
+                  value="icon"
+                  aria-label={t.layoutControls.toggleIcon}
+                >
+                  {t.layoutControls.icon}
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="offcanvas"
-                  aria-label="Toggle offcanvas"
+                  aria-label={t.layoutControls.toggleOffcanvas}
                 >
-                  Ẩn hoàn toàn
+                  {t.layoutControls.offcanvas}
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Bố cục nội dung</Label>
+              <Label className="text-xs font-medium">
+                {t.layoutControls.contentLayout}
+              </Label>
               <ToggleGroup
                 className="w-full **:data-[slot=toggle-group-item]:flex-1 **:data-[slot=toggle-group-item]:text-xs"
                 size="sm"
@@ -221,14 +259,17 @@ export function LayoutControls(props: LayoutControlsProps) {
                   handleValueChange("content_layout", value)
                 }
               >
-                <ToggleGroupItem value="centered" aria-label="Toggle centered">
-                  Căn giữa
+                <ToggleGroupItem
+                  value="centered"
+                  aria-label={t.layoutControls.toggleCentered}
+                >
+                  {t.layoutControls.centered}
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="full-width"
-                  aria-label="Toggle full-width"
+                  aria-label={t.layoutControls.toggleFullWidth}
                 >
-                  Toàn chiều rộng
+                  {t.layoutControls.fullWidth}
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
