@@ -34,9 +34,9 @@ export const sidebarItems: NavGroup[] = [
   {
     id: 1,
     items: [
-      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-      { title: "Documents", url: "/documents", icon: FileText },
-      { title: "Settings", url: "/settings", icon: Settings },
+      { title: "Bảng điều khiển", url: "/dashboard", icon: LayoutDashboard },
+      { title: "Tài liệu", url: "/documents", icon: FileText },
+      { title: "Cài đặt", url: "/settings", icon: Settings },
     ],
   },
 ];

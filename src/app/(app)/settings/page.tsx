@@ -1,3 +1,3 @@
 export default function SettingsPage() {
-  return <h1 className="text-2xl font-semibold">Settings</h1>;
+  return <h1 className="text-2xl font-semibold">Cài đặt</h1>;
 }

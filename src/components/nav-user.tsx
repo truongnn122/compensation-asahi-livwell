@@ -143,7 +143,7 @@ export function NavUser({ user }: { user: TUser }) {
                   ) : (
                     <IconSun className="size-4" />
                   )}
-                  Theme
+                  Giao diện
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
@@ -151,16 +151,16 @@ export function NavUser({ user }: { user: TUser }) {
                       onClick={() => handleValueChange("light")}
                     >
                       <IconSun className="size-4" />
-                      Light
+                      Sáng
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleValueChange("dark")}>
                       <IconMoon className="size-4" />
-                      Dark
+                      Tối
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => handleValueChange("system")}
                     >
-                      System
+                      Hệ thống
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
@@ -169,7 +169,7 @@ export function NavUser({ user }: { user: TUser }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
               <IconLogout className="size-4" />
-              Sign out
+              Đăng xuất
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -23,26 +23,36 @@ import {
 } from "@/components/ui/command";
 
 const searchItems = [
-  { group: "Dashboards", icon: LayoutDashboard, label: "Default" },
-  { group: "Dashboards", icon: ChartBar, label: "CRM", disabled: true },
-  { group: "Dashboards", icon: Gauge, label: "Analytics", disabled: true },
+  { group: "Bảng điều khiển", icon: LayoutDashboard, label: "Mặc định" },
+  { group: "Bảng điều khiển", icon: ChartBar, label: "CRM", disabled: true },
   {
-    group: "Dashboards",
+    group: "Bảng điều khiển",
+    icon: Gauge,
+    label: "Phân tích",
+    disabled: true,
+  },
+  {
+    group: "Bảng điều khiển",
     icon: ShoppingBag,
-    label: "E-Commerce",
+    label: "Thương mại điện tử",
     disabled: true,
   },
   {
-    group: "Dashboards",
+    group: "Bảng điều khiển",
     icon: GraduationCap,
-    label: "Academy",
+    label: "Học viện",
     disabled: true,
   },
-  { group: "Dashboards", icon: Forklift, label: "Logistics", disabled: true },
-  { group: "Authentication", label: "Login v1" },
-  { group: "Authentication", label: "Login v2" },
-  { group: "Authentication", label: "Register v1" },
-  { group: "Authentication", label: "Register v2" },
+  {
+    group: "Bảng điều khiển",
+    icon: Forklift,
+    label: "Hậu cần",
+    disabled: true,
+  },
+  { group: "Xác thực", label: "Đăng nhập v1" },
+  { group: "Xác thực", label: "Đăng nhập v2" },
+  { group: "Xác thực", label: "Đăng ký v1" },
+  { group: "Xác thực", label: "Đăng ký v2" },
 ];
 
 export function SearchDialog() {
@@ -66,15 +76,15 @@ export function SearchDialog() {
         onClick={() => setOpen(true)}
       >
         <Search className="size-4" />
-        Search
+        Tìm kiếm
         <kbd className="bg-muted inline-flex h-5 items-center gap-1 rounded border px-1.5 text-[10px] font-medium select-none">
           <span className="text-xs">⌘</span>J
         </kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Search dashboards, users, and more…" />
+        <CommandInput placeholder="Tìm kiếm bảng điều khiển, người dùng, và hơn thế nữa…" />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandEmpty>Không tìm thấy kết quả.</CommandEmpty>
           {[...new Set(searchItems.map(item => item.group))].map((group, i) => (
             <React.Fragment key={group}>
               {i !== 0 && <CommandSeparator />}

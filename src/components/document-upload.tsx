@@ -25,7 +25,7 @@ export function DocumentUpload({
     startTransition(async () => {
       const result = await uploadDocument(formData);
       if (result.ok) {
-        toast.success(`Uploaded ${result.data.fileName}`);
+        toast.success(`Đã tải lên ${result.data.fileName}`);
         onUploaded(result.data);
       } else {
         toast.error(result.error);

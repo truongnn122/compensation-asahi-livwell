@@ -38,7 +38,7 @@ export function DocumentsView({
       setDocuments(previous);
       toast.error(result.error);
     } else {
-      toast.success("Document deleted");
+      toast.success("Đã xóa tài liệu");
     }
   };
 
@@ -55,7 +55,7 @@ export function DocumentsView({
       <DataTable
         data={documents}
         columns={columns}
-        emptyMessage="No documents uploaded yet."
+        emptyMessage="Chưa có tài liệu nào được tải lên."
         enableColumnVisibility={false}
       />
     </div>

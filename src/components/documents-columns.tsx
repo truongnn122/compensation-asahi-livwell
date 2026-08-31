@@ -17,20 +17,20 @@ export function createDocumentsColumns({
   return [
     {
       accessorKey: "fileName",
-      header: "File name",
+      header: "Tên tệp",
     },
     {
       accessorKey: "size",
-      header: "Size",
+      header: "Kích thước",
       cell: ({ row }) => formatBytes(row.original.size),
     },
     {
       accessorKey: "uploadedByEmail",
-      header: "Uploaded by",
+      header: "Người tải lên",
     },
     {
       accessorKey: "uploadedAt",
-      header: "Uploaded",
+      header: "Ngày tải lên",
       cell: ({ row }) => formatDate(row.original.uploadedAt),
     },
     {
@@ -44,7 +44,7 @@ export function createDocumentsColumns({
             onClick={() => onDownload(row.original.id)}
           >
             <Download />
-            <span className="sr-only">Download</span>
+            <span className="sr-only">Tải xuống</span>
           </Button>
           <Button
             variant="ghost"
@@ -52,7 +52,7 @@ export function createDocumentsColumns({
             onClick={() => onDelete(row.original.id)}
           >
             <Trash2 />
-            <span className="sr-only">Delete</span>
+            <span className="sr-only">Xóa</span>
           </Button>
         </div>
       ),

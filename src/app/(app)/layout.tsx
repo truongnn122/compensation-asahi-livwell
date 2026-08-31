@@ -75,6 +75,7 @@ export default async function Layout({
   return (
     <SidebarProvider
       defaultOpen={defaultOpen}
+      className="bg-cover bg-center bg-no-repeat [background-image:url('/brand/images-webp/bg.webp')]"
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -90,7 +91,10 @@ export default async function Layout({
           collapsible={sidebarCollapsible}
           user={user}
         />
-        <SidebarInset data-content-layout={contentLayout}>
+        <SidebarInset
+          data-content-layout={contentLayout}
+          className="dark:text-white"
+        >
           <header
             data-navbar-style={navbarStyle}
             className={cn(

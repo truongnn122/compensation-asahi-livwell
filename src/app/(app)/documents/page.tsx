@@ -4,7 +4,7 @@ import { DocumentsView } from "@/components/documents-view";
 import { listDocuments } from "@/server/documents-actions";
 
 export const metadata: Metadata = {
-  title: "Documents — Compensation",
+  title: "Tài liệu — Compensation",
 };
 
 export default async function DocumentsPage() {
@@ -13,7 +13,7 @@ export default async function DocumentsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Documents</h1>
+      <h1 className="text-2xl font-semibold">Tài liệu</h1>
       <DocumentsView initialDocuments={documents} />
     </div>
   );

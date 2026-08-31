@@ -36,7 +36,7 @@ export default async function RootLayout({
   const themeMode = await getPreference<ThemeMode>(
     "theme_mode",
     THEME_MODE_VALUES,
-    "light"
+    "dark"
   );
   const themePreset = await getPreference<ThemePreset>(
     "theme_preset",

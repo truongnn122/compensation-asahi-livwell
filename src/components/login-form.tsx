@@ -20,8 +20,8 @@ import { auth } from "@/lib/firebase/client";
 import { establishSession } from "@/server/auth-actions";
 
 const loginSchema = z.object({
-  email: z.email("Enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  email: z.email("Vui lòng nhập địa chỉ email hợp lệ"),
+  password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -54,7 +54,7 @@ export function LoginForm() {
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setFormError("Invalid email or password.");
+      setFormError("Email hoặc mật khẩu không đúng.");
     }
   };
 
@@ -62,9 +62,9 @@ export function LoginForm() {
     <form onSubmit={handleSubmit(onSubmit)}>
       <FieldGroup>
         <div className="flex flex-col gap-1 text-center">
-          <h1 className="text-xl font-semibold">Sign in</h1>
+          <h1 className="text-xl font-semibold">Đăng nhập</h1>
           <p className="text-muted-foreground text-sm">
-            Enter your email and password to access your account.
+            Nhập email và mật khẩu để truy cập tài khoản của bạn.
           </p>
         </div>
 
@@ -81,7 +81,7 @@ export function LoginForm() {
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
+          <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
           <Input
             id="password"
             type="password"
@@ -97,7 +97,7 @@ export function LoginForm() {
         <FieldError>{formError}</FieldError>
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? "Signing in..." : "Sign in"}
+          {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
         </Button>
       </FieldGroup>
     </form>

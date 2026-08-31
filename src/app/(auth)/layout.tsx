@@ -2,8 +2,7 @@ import { ReactNode } from "react";
 
 import Image from "next/image";
 
-const QUOTE =
-  '"The journey of a thousand miles begins with a single step." — Lao Tzu';
+const QUOTE = '"Hành trình vạn dặm bắt đầu từ một bước chân." — Lão Tử';
 
 export default function AuthLayout({
   children,
@@ -19,10 +18,10 @@ export default function AuthLayout({
           muted
           playsInline
         />
-        <div className="bg-primary/55 absolute inset-0" />
-        <div className="from-primary/80 absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t to-transparent" />
+        <div className="absolute inset-0 bg-[oklch(0.283_0.121_260.9)]/55" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[oklch(0.283_0.121_260.9)]/80 to-transparent" />
 
-        <div className="text-primary-foreground relative flex h-full flex-col justify-between p-10">
+        <div className="relative flex h-full flex-col justify-between p-10 text-white">
           <Image
             src="/brand/logo/ASAHI_HORIZONTAL_VECTOR.svg"
             alt="Asahi Livwell"
@@ -41,11 +40,11 @@ export default function AuthLayout({
               className="h-7 w-11"
             />
             <h2 className="text-3xl leading-tight font-semibold text-balance">
-              A new dawn unfolds
+              Một bình minh mới bắt đầu
             </h2>
-            <p className="text-primary-foreground/70 text-sm">
-              Sign in to manage compensation and benefits for the Asahi
-              Livwell team.
+            <p className="text-sm text-white/70">
+              Đăng nhập để quản lý lương thưởng và phúc lợi cho đội ngũ Asahi
+              Livwell.
             </p>
           </div>
 
@@ -54,7 +53,7 @@ export default function AuthLayout({
               {[0, 1].map(i => (
                 <span key={i} className="flex shrink-0 items-center">
                   <span className="px-6">{QUOTE}</span>
-                  <span className="text-primary-foreground/40 px-6">—</span>
+                  <span className="px-6 text-white/40">—</span>
                 </span>
               ))}
             </div>
@@ -70,7 +69,7 @@ export default function AuthLayout({
           muted
           playsInline
         />
-        <div className="bg-primary/55 absolute inset-0 lg:hidden" />
+        <div className="absolute inset-0 bg-[oklch(0.283_0.121_260.9)]/55 lg:hidden" />
         <Image
           src="/brand/logo/ASAHI_HORIZONTAL_VECTOR.svg"
           alt="Asahi Livwell"
