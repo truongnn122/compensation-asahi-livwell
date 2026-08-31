@@ -121,7 +121,6 @@ export const en: typeof vi = {
     recruitmentPublic: {
       title: "Recruitment information form",
       logoAlt: "Asahi Livwell",
-      kicker: "Asahi – Agent profile · CT-01",
       heading: "Recruitment information & candidate screening form",
       subtitle:
         "Please fill in the information below completely and accurately. Fields marked with * are required.",
@@ -348,8 +347,8 @@ export const en: typeof vi = {
       mobile2: "Mobile 2",
       email: "Email *",
       emailPlaceholder: "you@email.com",
-      managerLabel: "Manager name *",
-      managerPlaceholder: "Select a manager",
+      managerLabel: "SD full name *",
+      managerPlaceholder: "Select an SD",
     },
     section2: {
       title: "Recruitment information",
@@ -367,7 +366,6 @@ export const en: typeof vi = {
       recruiterName: "Recruiter full name *",
       referrerCode: "Referrer code (if any)",
       referrerName: "Referrer full name",
-      sdName: "SD name",
     },
     section3: {
       title: "Permanent address",

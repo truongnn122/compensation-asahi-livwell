@@ -25,19 +25,14 @@ export default async function RecruitmentPage() {
 
       <main className="relative mx-auto max-w-3xl px-6 pb-10">
         <div className="flex flex-col items-center gap-6 py-16 text-center text-white">
-          <div className="flex w-full items-center justify-between gap-3">
-            <Image
-              src="/brand/logo/ASAHI_HORIZONTAL_VECTOR.svg"
-              alt={dict.pages.recruitmentPublic.logoAlt}
-              width={124}
-              height={51}
-              className="h-9 w-auto"
-              priority
-            />
-            <p className="text-xs font-medium tracking-widest text-white/70 uppercase">
-              {dict.pages.recruitmentPublic.kicker}
-            </p>
-          </div>
+          <Image
+            src="/brand/logo/ASAHI_HORIZONTAL_VECTOR.svg"
+            alt={dict.pages.recruitmentPublic.logoAlt}
+            width={124}
+            height={51}
+            className="h-9 w-auto"
+            priority
+          />
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl font-semibold text-balance sm:text-3xl">
               {dict.pages.recruitmentPublic.heading}

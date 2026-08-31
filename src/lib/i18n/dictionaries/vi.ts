@@ -118,7 +118,6 @@ export const vi = {
     recruitmentPublic: {
       title: "Phiếu thông tin tuyển dụng",
       logoAlt: "Asahi Livwell",
-      kicker: "Asahi – Hồ sơ đại lý · CT-01",
       heading: "Phiếu thông tin tuyển dụng & sàng lọc ứng viên",
       subtitle:
         "Vui lòng điền đầy đủ và chính xác thông tin bên dưới. Các trường có dấu * là bắt buộc.",
@@ -344,8 +343,8 @@ export const vi = {
       mobile2: "Di động 2",
       email: "Email *",
       emailPlaceholder: "ban@email.com",
-      managerLabel: "Tên Quản Lý *",
-      managerPlaceholder: "Chọn tên quản lý",
+      managerLabel: "Họ và tên SD *",
+      managerPlaceholder: "Chọn tên SD",
     },
     section2: {
       title: "Thông tin tuyển dụng",
@@ -363,7 +362,6 @@ export const vi = {
       recruiterName: "Họ tên người tuyển dụng *",
       referrerCode: "Mã số người giới thiệu (nếu có)",
       referrerName: "Họ tên người giới thiệu",
-      sdName: "Tên SD",
     },
     section3: {
       title: "Địa chỉ thường trú",

@@ -71,7 +71,6 @@ export function buildRecruitmentSchema(
     recruiterName: z.string().min(1, t.recruiterNameRequired),
     referrerCode: z.string().optional(),
     referrerName: z.string().optional(),
-    sdName: z.string().optional(),
 
     permanentProvince: z.string().min(1, t.permanentProvinceRequired),
     permanentWard: z.string().min(1, t.permanentWardRequired),

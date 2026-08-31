@@ -1163,13 +1163,6 @@ export function RecruitmentFormFields({
               <Input id="referrerName" {...register("referrerName")} />
             </Field>
           </div>
-
-          <Field>
-            <FieldLabel htmlFor="sdName">
-              {t.recruitmentForm.section2.sdName}
-            </FieldLabel>
-            <Input id="sdName" {...register("sdName")} />
-          </Field>
         </FieldGroup>
       </SectionCard>
 
