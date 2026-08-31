@@ -27,7 +27,7 @@ export function proxy(request: NextRequest) {
 
   if (isLogin && hasSession) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/recruitments";
     url.search = "";
     return NextResponse.redirect(url);
   }

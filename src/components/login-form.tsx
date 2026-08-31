@@ -51,7 +51,7 @@ export function LoginForm() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push("/recruitments");
       router.refresh();
     } catch {
       setFormError("Email hoặc mật khẩu không đúng.");

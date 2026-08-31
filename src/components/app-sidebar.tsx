@@ -32,7 +32,7 @@ export function AppSidebar({
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <Link href="/dashboard">
+              <Link href="/recruitments">
                 <Image
                   src="/brand/logo/ASAHI_SYMBOL.svg"
                   alt=""
