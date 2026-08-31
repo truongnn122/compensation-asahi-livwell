@@ -11,38 +11,95 @@ export function buildRecruitmentSchema(
     idNumber: z.string().min(1, t.idNumberRequired),
     idIssueDate: z.string().optional(),
     idIssuePlace: z.string().optional(),
-    permanentAddress: z.string().min(1, t.permanentAddressRequired),
-    contactAddress: z.string().optional(),
+    gender: z.enum(["male", "female"], {
+      error: t.genderRequired,
+    }),
+    maritalStatus: z.enum(["single", "married", "divorced", "widowed"], {
+      error: t.maritalStatusRequired,
+    }),
     mobile1: z.string().min(1, t.mobile1Required),
     mobile2: z.string().optional(),
     email: z.email(t.emailInvalid),
     managerUid: z.string().min(1, t.managerRequired),
     managerName: z.string().min(1, t.managerRequired),
 
-    positionApplied: z.enum([
-      "life_planner",
-      "sales_director",
-      "sales_manager",
-      "other",
-    ]),
+    taxCode: z.string().optional(),
+    taxCodeIssueDate: z.string().optional(),
+    taxCodeIssuePlace: z.string().optional(),
+    averageMonthlyIncome: z
+      .enum(["under5m", "from5to10m", "from10to20m", "from20to50m", "over50m"])
+      .optional(),
+    potentialCustomers: z.string().optional(),
+    educationLevel: z
+      .enum(["thpt", "trungCap", "caoDang", "daiHoc", "sauDaiHoc"])
+      .optional(),
+    isCivilServant: z.enum(["no", "yes"]).optional(),
+
+    accountHolderName: z.string().optional(),
+    bankAccountNumber: z.string().optional(),
+    bankName: z.string().optional(),
+    branch: z.string().optional(),
+
+    channel: z.enum(["agency", "other"], {
+      error: t.channelRequired,
+    }),
+    agencyType: z.enum(["full_time", "part_time"]).optional(),
+
+    positionApplied: z.enum(
+      ["agent", "unit_manager", "district_manager", "gad", "other"],
+      { error: t.positionRequired }
+    ),
     positionOther: z.string().optional(),
+
+    participatingProgram: z.enum(["no", "yes"]).optional(),
+    programTypes: z
+      .array(
+        z.enum([
+          "near_mdrt_700m",
+          "mdrt",
+          "mdrt_2_years",
+          "cot_mdrt_3_years",
+          "gad_buyout",
+          "other",
+        ])
+      )
+      .optional(),
+
+    isRehire: z.enum(["no", "yes"]).optional(),
+
+    recruiterCode: z.string().optional(),
+    recruiterName: z.string().min(1, t.recruiterNameRequired),
+    referrerCode: z.string().optional(),
+    referrerName: z.string().optional(),
+    sdName: z.string().optional(),
+
+    permanentProvince: z.string().min(1, t.permanentProvinceRequired),
+    permanentWard: z.string().min(1, t.permanentWardRequired),
+    permanentStreetAddress: z.string().min(1, t.permanentStreetRequired),
+
+    sameAsPermanentAddress: z.enum(["same", "different"]).optional(),
+    temporaryProvince: z.string().optional(),
+    temporaryWard: z.string().optional(),
+    temporaryStreetAddress: z.string().optional(),
+
+    hasInsuranceExperience: z.enum(["no", "yes"]).optional(),
+    workHistory: z
+      .array(
+        z.object({
+          fromDate: z.string().optional(),
+          toDate: z.string().optional(),
+          title: z.string().optional(),
+          companyNameAddress: z.string().optional(),
+        })
+      )
+      .optional(),
 
     referralChannel: z
       .array(z.enum(["ads", "fanpage", "website", "other"]))
-      .min(1, t.referralChannelRequired),
+      .optional(),
     referralOther: z.string().optional(),
 
-    familyStatus: z.enum([
-      "single",
-      "married",
-      "single_dependent",
-      "married_children",
-      "other",
-    ]),
-    childrenCount: z.string().optional(),
-    familyStatusOther: z.string().optional(),
-
-    pepStatus: z.enum(["no", "yes"], {
+    hasPepRelationship: z.enum(["no", "yes"], {
       error: t.pepStatusRequired,
     }),
     pepRelationship: z.string().optional(),
@@ -50,21 +107,50 @@ export function buildRecruitmentSchema(
     pepPosition: z.string().optional(),
     pepOrganization: z.string().optional(),
 
-    currentCompanyName: z.string().optional(),
-    currentManagerName: z.string().optional(),
-    currentManagerContact: z.string().optional(),
-    previousCompanyName: z.string().optional(),
-    previousManagerName: z.string().optional(),
-    previousManagerContact: z.string().optional(),
+    familyMembers: z
+      .array(
+        z.object({
+          name: z.string().optional(),
+          birthYear: z.string().optional(),
+          relationship: z.string().optional(),
+          occupation: z.string().optional(),
+          address: z.string().optional(),
+        })
+      )
+      .optional(),
 
-    q1: z.string().min(1, t.questionRequired),
-    q2: z.string().min(1, t.questionRequired),
-    q3: z.string().min(1, t.questionRequired),
-    q4: z.string().min(1, t.questionRequired),
+    q1Experience: z.enum(["no", "yes"], { error: t.answerRequired }),
+    q2View: z.enum(
+      [
+        "financial_protection",
+        "savings_investment",
+        "important_not_explored",
+        "hesitant",
+        "other",
+      ],
+      { error: t.answerRequired }
+    ),
+    q2ViewOther: z.string().optional(),
+    q3FamilyReaction: z.enum(
+      ["supportive", "surprised_respectful", "proud", "other"],
+      { error: t.answerRequired }
+    ),
+    q3FamilyReactionOther: z.string().optional(),
+    q4FirstTenPeople: z.enum(
+      [
+        "family",
+        "close_friends",
+        "colleagues_partners",
+        "neighbors_acquaintances",
+        "other",
+      ],
+      { error: t.answerRequired }
+    ),
+    q4FirstTenPeopleOther: z.string().optional(),
     q5Training: z
       .array(z.enum(["lpfc", "sales_skills", "sales_management"]))
       .min(1, t.trainingRequired),
-    q6: z.string().min(1, t.questionRequired),
+    q6Support: z.string().min(1, t.questionRequired),
 
     attachments: z
       .array(
@@ -83,11 +169,31 @@ export function buildRecruitmentSchema(
     commitmentDataConsent: z.literal(true, {
       error: t.commitmentRequired,
     }),
-    signatureName: z.string().min(1, t.signatureNameRequired),
+    confirmationConsent: z.enum(["no", "yes"]).optional(),
+    confirmationMethod: z.enum(["handwritten"], {
+      error: t.confirmationMethodRequired,
+    }),
+    signDate: z.string().min(1, t.signDateRequired),
   });
 
   return recruitmentObjectSchema.superRefine((data, ctx) => {
-    if (data.pepStatus !== "yes") return;
+    if (data.channel === "agency" && !data.agencyType) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["agencyType"],
+        message: t.agencyTypeRequired,
+      });
+    }
+
+    if (data.confirmationConsent !== "yes") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["confirmationConsent"],
+        message: t.confirmationConsentRequired,
+      });
+    }
+
+    if (data.hasPepRelationship !== "yes") return;
 
     const requiredWhenPep: {
       field:

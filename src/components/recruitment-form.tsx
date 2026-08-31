@@ -37,8 +37,25 @@ export function RecruitmentForm({ managers }: { managers: TManagerOption[] }) {
   } = useForm<RecruitmentValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      pepStatus: "no",
+      isCivilServant: "no",
+      participatingProgram: "no",
+      isRehire: "no",
+      programTypes: [],
+      sameAsPermanentAddress: "same",
+      hasInsuranceExperience: "no",
+      workHistory: [
+        { fromDate: "", toDate: "", title: "", companyNameAddress: "" },
+      ],
       referralChannel: [],
+      familyMembers: [
+        {
+          name: "",
+          birthYear: "",
+          relationship: "",
+          occupation: "",
+          address: "",
+        },
+      ],
       q5Training: [],
       attachments: [],
       commitmentVoluntary: undefined,

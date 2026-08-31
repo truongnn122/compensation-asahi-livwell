@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import {
   IconCloudUpload,
   IconDownload,
   IconLoader2,
+  IconPlus,
   IconX,
 } from "@tabler/icons-react";
 import {
   Controller,
+  useFieldArray,
   type Control,
   type FieldErrors,
   type UseFormRegister,
@@ -18,7 +20,16 @@ import {
   type UseFormWatch,
 } from "react-hook-form";
 
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import {
   Field,
   FieldDescription,
@@ -26,6 +37,7 @@ import {
   FieldGroup,
   FieldLabel,
   FieldLegend,
+  FieldSeparator,
   FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -75,22 +87,131 @@ function SectionCard({
   );
 }
 
+function AddressCombobox({
+  items,
+  value,
+  onValueChange,
+  placeholder,
+  emptyText,
+  disabled,
+  invalid,
+}: {
+  items: string[];
+  value: string | undefined;
+  onValueChange: (value: string) => void;
+  placeholder: string;
+  emptyText: string;
+  disabled?: boolean;
+  invalid?: boolean;
+}) {
+  return (
+    <Combobox
+      items={items}
+      value={value ?? null}
+      onValueChange={v => onValueChange(v ?? "")}
+      disabled={disabled}
+    >
+      <ComboboxInput placeholder={placeholder} aria-invalid={invalid} />
+      <ComboboxContent>
+        <ComboboxEmpty>{emptyText}</ComboboxEmpty>
+        <ComboboxList>
+          {(item: string) => (
+            <ComboboxItem key={item} value={item}>
+              {item}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  );
+}
+
 const MAX_FILES = 5;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_TYPES =
   "image/jpeg,image/png,image/webp,image/heic,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-function getOpenQuestions(
-  t: Dictionary
-): { name: "q1" | "q2" | "q3" | "q4" | "q6"; label: string }[] {
-  return [
-    { name: "q1", label: t.recruitmentForm.openQuestions.q1 },
-    { name: "q2", label: t.recruitmentForm.openQuestions.q2 },
-    { name: "q3", label: t.recruitmentForm.openQuestions.q3 },
-    { name: "q4", label: t.recruitmentForm.openQuestions.q4 },
-    { name: "q6", label: t.recruitmentForm.openQuestions.q6 },
-  ];
-}
+const BANK_OPTIONS = [
+  "Vietcombank",
+  "VietinBank",
+  "BIDV",
+  "Agribank",
+  "Techcombank",
+  "MB Bank",
+  "ACB",
+  "VPBank",
+  "Sacombank",
+  "HDBank",
+  "TPBank",
+  "SHB",
+  "VIB",
+  "Eximbank",
+  "SCB",
+  "OCB",
+  "MSB",
+  "SeABank",
+  "PVcomBank",
+  "Nam A Bank",
+  "Bac A Bank",
+  "ABBANK",
+  "BaoViet Bank",
+  "LienVietPostBank",
+  "Kienlongbank",
+  "NCB",
+  "PGBank",
+  "SaigonBank",
+  "VietBank",
+  "VietCapitalBank",
+  "Woori Bank",
+  "Standard Chartered",
+  "HSBC",
+  "Shinhan Bank",
+] as const;
+
+type TProvinceDivision = {
+  name: string;
+  wards: string[];
+};
+
+type TRawDivision = {
+  tentinhmoi: string;
+  phuongxa: { tenphuongxa: string }[];
+};
+
+const TEMPLATE_DOCUMENTS = [
+  {
+    file: "F-01_Phieu_thong_tin_tuyen_dung_VN.docx",
+    label: "F-01 – Phiếu thông tin tuyển dụng",
+  },
+  {
+    file: "F-01_Phieu_thong_tin_tuyen_dung_VN_V2.docx",
+    label: "F-01 – Phiếu thông tin tuyển dụng (V2)",
+  },
+  {
+    file: "F-03_Phieu_dang_ky_dai_ly_VN.docx",
+    label: "F-03 – Phiếu đăng ký đại lý",
+  },
+  {
+    file: "F-04_Phieu_cam_ket_chu_ky_mau_VN.docx",
+    label: "F-04 – Phiếu cam kết chữ ký mẫu",
+  },
+  {
+    file: "F-05_Phieu_danh_gia_ung_vien_VN.docx",
+    label: "F-05 – Phiếu đánh giá ứng viên",
+  },
+  {
+    file: "F-06_Phieu_danh_gia_phe_duyet_tuyen_dung_VN.docx",
+    label: "F-06 – Phiếu đánh giá phê duyệt tuyển dụng",
+  },
+  {
+    file: "F-07_Danh_muc_ho_so_VN.docx",
+    label: "F-07 – Danh mục hồ sơ",
+  },
+  {
+    file: "F-08_Phieu_danh_gia_tai_ky_VN.docx",
+    label: "F-08 – Phiếu đánh giá tái ký",
+  },
+] as const;
 
 export function RecruitmentFormFields({
   t,
@@ -115,21 +236,76 @@ export function RecruitmentFormFields({
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [provinces, setProvinces] = useState<TProvinceDivision[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/data/vn-administrative-divisions.json")
+      .then(res => res.json())
+      .then((data: TRawDivision[]) => {
+        if (cancelled) return;
+        setProvinces(
+          data.map(p => ({
+            name: p.tentinhmoi.replace(/^Tp /, "Thành phố "),
+            wards: p.phuongxa.map(w => w.tenphuongxa),
+          }))
+        );
+      })
+      .catch(() => setProvinces([]));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const CHANNEL_OPTIONS = [
+    { value: "agency", label: t.recruitmentForm.options.channel.agency },
+    { value: "other", label: t.recruitmentForm.options.channel.other },
+  ] as const;
+
+  const AGENCY_TYPE_OPTIONS = [
+    {
+      value: "full_time",
+      label: t.recruitmentForm.options.agencyType.full_time,
+    },
+    {
+      value: "part_time",
+      label: t.recruitmentForm.options.agencyType.part_time,
+    },
+  ] as const;
 
   const POSITION_OPTIONS = [
+    { value: "agent", label: t.recruitmentForm.options.position.agent },
     {
-      value: "life_planner",
-      label: t.recruitmentForm.options.position.life_planner,
+      value: "unit_manager",
+      label: t.recruitmentForm.options.position.unit_manager,
     },
     {
-      value: "sales_director",
-      label: t.recruitmentForm.options.position.sales_director,
+      value: "district_manager",
+      label: t.recruitmentForm.options.position.district_manager,
     },
-    {
-      value: "sales_manager",
-      label: t.recruitmentForm.options.position.sales_manager,
-    },
+    { value: "gad", label: t.recruitmentForm.options.position.gad },
     { value: "other", label: t.recruitmentForm.options.position.other },
+  ] as const;
+
+  const PROGRAM_OPTIONS = [
+    {
+      value: "near_mdrt_700m",
+      label: t.recruitmentForm.options.program.near_mdrt_700m,
+    },
+    { value: "mdrt", label: t.recruitmentForm.options.program.mdrt },
+    {
+      value: "mdrt_2_years",
+      label: t.recruitmentForm.options.program.mdrt_2_years,
+    },
+    {
+      value: "cot_mdrt_3_years",
+      label: t.recruitmentForm.options.program.cot_mdrt_3_years,
+    },
+    {
+      value: "gad_buyout",
+      label: t.recruitmentForm.options.program.gad_buyout,
+    },
+    { value: "other", label: t.recruitmentForm.options.program.other },
   ] as const;
 
   const REFERRAL_OPTIONS = [
@@ -139,18 +315,56 @@ export function RecruitmentFormFields({
     { value: "other", label: t.recruitmentForm.options.referral.other },
   ] as const;
 
-  const FAMILY_STATUS_OPTIONS = [
-    { value: "single", label: t.recruitmentForm.options.familyStatus.single },
-    { value: "married", label: t.recruitmentForm.options.familyStatus.married },
+  const MARITAL_STATUS_OPTIONS = [
+    { value: "single", label: t.recruitmentForm.options.maritalStatus.single },
     {
-      value: "single_dependent",
-      label: t.recruitmentForm.options.familyStatus.single_dependent,
+      value: "married",
+      label: t.recruitmentForm.options.maritalStatus.married,
     },
     {
-      value: "married_children",
-      label: t.recruitmentForm.options.familyStatus.married_children,
+      value: "divorced",
+      label: t.recruitmentForm.options.maritalStatus.divorced,
     },
-    { value: "other", label: t.recruitmentForm.options.familyStatus.other },
+    {
+      value: "widowed",
+      label: t.recruitmentForm.options.maritalStatus.widowed,
+    },
+  ] as const;
+
+  const INCOME_OPTIONS = [
+    { value: "under5m", label: t.recruitmentForm.options.income.under5m },
+    { value: "from5to10m", label: t.recruitmentForm.options.income.from5to10m },
+    {
+      value: "from10to20m",
+      label: t.recruitmentForm.options.income.from10to20m,
+    },
+    {
+      value: "from20to50m",
+      label: t.recruitmentForm.options.income.from20to50m,
+    },
+    { value: "over50m", label: t.recruitmentForm.options.income.over50m },
+  ] as const;
+
+  const EDUCATION_OPTIONS = [
+    { value: "thpt", label: t.recruitmentForm.options.education.thpt },
+    { value: "trungCap", label: t.recruitmentForm.options.education.trungCap },
+    { value: "caoDang", label: t.recruitmentForm.options.education.caoDang },
+    { value: "daiHoc", label: t.recruitmentForm.options.education.daiHoc },
+    {
+      value: "sauDaiHoc",
+      label: t.recruitmentForm.options.education.sauDaiHoc,
+    },
+  ] as const;
+
+  const RELATIONSHIP_OPTIONS = [
+    { value: "cha", label: t.recruitmentForm.options.relationship.cha },
+    { value: "me", label: t.recruitmentForm.options.relationship.me },
+    { value: "vo", label: t.recruitmentForm.options.relationship.vo },
+    { value: "chong", label: t.recruitmentForm.options.relationship.chong },
+    { value: "con", label: t.recruitmentForm.options.relationship.con },
+    { value: "anh", label: t.recruitmentForm.options.relationship.anh },
+    { value: "chi", label: t.recruitmentForm.options.relationship.chi },
+    { value: "em", label: t.recruitmentForm.options.relationship.em },
   ] as const;
 
   const TRAINING_OPTIONS = [
@@ -165,13 +379,82 @@ export function RecruitmentFormFields({
     },
   ] as const;
 
-  const OPEN_QUESTIONS = getOpenQuestions(t);
+  const Q2_OPTIONS = [
+    {
+      value: "financial_protection",
+      label: t.recruitmentForm.options.q2.financial_protection,
+    },
+    {
+      value: "savings_investment",
+      label: t.recruitmentForm.options.q2.savings_investment,
+    },
+    {
+      value: "important_not_explored",
+      label: t.recruitmentForm.options.q2.important_not_explored,
+    },
+    { value: "hesitant", label: t.recruitmentForm.options.q2.hesitant },
+    { value: "other", label: t.recruitmentForm.options.q2.other },
+  ] as const;
+
+  const Q3_OPTIONS = [
+    { value: "supportive", label: t.recruitmentForm.options.q3.supportive },
+    {
+      value: "surprised_respectful",
+      label: t.recruitmentForm.options.q3.surprised_respectful,
+    },
+    { value: "proud", label: t.recruitmentForm.options.q3.proud },
+    { value: "other", label: t.recruitmentForm.options.q3.other },
+  ] as const;
+
+  const Q4_OPTIONS = [
+    { value: "family", label: t.recruitmentForm.options.q4.family },
+    {
+      value: "close_friends",
+      label: t.recruitmentForm.options.q4.close_friends,
+    },
+    {
+      value: "colleagues_partners",
+      label: t.recruitmentForm.options.q4.colleagues_partners,
+    },
+    {
+      value: "neighbors_acquaintances",
+      label: t.recruitmentForm.options.q4.neighbors_acquaintances,
+    },
+    { value: "other", label: t.recruitmentForm.options.q4.other },
+  ] as const;
+
+  const {
+    fields: workHistoryFields,
+    append: appendWorkHistory,
+    remove: removeWorkHistory,
+  } = useFieldArray({ control, name: "workHistory" });
+
+  const {
+    fields: familyMemberFields,
+    append: appendFamilyMember,
+    remove: removeFamilyMember,
+  } = useFieldArray({ control, name: "familyMembers" });
 
   const positionApplied = watch("positionApplied");
-  const referralChannel = watch("referralChannel");
-  const familyStatus = watch("familyStatus");
-  const pepStatus = watch("pepStatus");
+  const participatingProgram = watch("participatingProgram");
+  const sameAsPermanentAddress = watch("sameAsPermanentAddress");
+  const permanentProvince = watch("permanentProvince");
+  const temporaryProvince = watch("temporaryProvince");
+  const hasPepRelationship = watch("hasPepRelationship");
+  const q2View = watch("q2View");
+  const q3FamilyReaction = watch("q3FamilyReaction");
+  const q4FirstTenPeople = watch("q4FirstTenPeople");
   const attachments = watch("attachments");
+  const fullName = watch("fullName");
+
+  const permanentWards =
+    provinces.find(p => p.name === permanentProvince)?.wards ?? [];
+  const temporaryWards =
+    provinces.find(p => p.name === temporaryProvince)?.wards ?? [];
+
+  useEffect(() => {
+    setValue("accountHolderName", fullName);
+  }, [fullName, setValue]);
 
   const handleFilesSelected = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -219,19 +502,130 @@ export function RecruitmentFormFields({
     <>
       <SectionCard number={1} title={t.recruitmentForm.section1.title}>
         <FieldGroup>
-          <Field data-invalid={!!errors.fullName}>
-            <FieldLabel htmlFor="fullName">
-              {t.recruitmentForm.section1.fullName}
-            </FieldLabel>
-            <Input
-              id="fullName"
-              placeholder={t.recruitmentForm.section1.fullNamePlaceholder}
-              {...register("fullName")}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field data-invalid={!!errors.fullName}>
+              <FieldLabel htmlFor="fullName">
+                {t.recruitmentForm.section1.fullName}
+              </FieldLabel>
+              <Input
+                id="fullName"
+                placeholder={t.recruitmentForm.section1.fullNamePlaceholder}
+                {...register("fullName")}
+              />
+              <FieldError
+                errors={errors.fullName ? [errors.fullName] : undefined}
+              />
+            </Field>
+
+            <Controller
+              control={control}
+              name="managerUid"
+              render={({ field }) => (
+                <Field data-invalid={!!errors.managerUid}>
+                  <FieldLabel>
+                    {t.recruitmentForm.section1.managerLabel}
+                  </FieldLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={uid => {
+                      field.onChange(uid);
+                      const manager = managers.find(m => m.uid === uid);
+                      setValue("managerName", manager?.name ?? "");
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={
+                          t.recruitmentForm.section1.managerPlaceholder
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {managers.map(manager => (
+                        <SelectItem key={manager.uid} value={manager.uid}>
+                          {manager.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldError
+                    errors={errors.managerUid ? [errors.managerUid] : undefined}
+                  />
+                </Field>
+              )}
             />
-            <FieldError
-              errors={errors.fullName ? [errors.fullName] : undefined}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Controller
+              control={control}
+              name="gender"
+              render={({ field }) => (
+                <Field data-invalid={!!errors.gender}>
+                  <FieldLabel>
+                    {t.recruitmentForm.section1.genderLabel}
+                  </FieldLabel>
+                  <RadioGroup
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    className="flex gap-6"
+                  >
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="male" id="gender-male" />
+                      <FieldLabel htmlFor="gender-male" className="font-normal">
+                        {t.recruitmentForm.section1.genderMale}
+                      </FieldLabel>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="female" id="gender-female" />
+                      <FieldLabel
+                        htmlFor="gender-female"
+                        className="font-normal"
+                      >
+                        {t.recruitmentForm.section1.genderFemale}
+                      </FieldLabel>
+                    </div>
+                  </RadioGroup>
+                  <FieldError
+                    errors={errors.gender ? [errors.gender] : undefined}
+                  />
+                </Field>
+              )}
             />
-          </Field>
+
+            <Controller
+              control={control}
+              name="maritalStatus"
+              render={({ field }) => (
+                <Field data-invalid={!!errors.maritalStatus}>
+                  <FieldLabel>
+                    {t.recruitmentForm.section1.maritalStatusLabel}
+                  </FieldLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={
+                          t.recruitmentForm.section1.maritalStatusPlaceholder
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MARITAL_STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldError
+                    errors={
+                      errors.maritalStatus ? [errors.maritalStatus] : undefined
+                    }
+                  />
+                </Field>
+              )}
+            />
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field data-invalid={!!errors.dateOfBirth}>
@@ -285,25 +679,6 @@ export function RecruitmentFormFields({
             </Field>
           </div>
 
-          <Field data-invalid={!!errors.permanentAddress}>
-            <FieldLabel htmlFor="permanentAddress">
-              {t.recruitmentForm.section1.permanentAddress}
-            </FieldLabel>
-            <Input id="permanentAddress" {...register("permanentAddress")} />
-            <FieldError
-              errors={
-                errors.permanentAddress ? [errors.permanentAddress] : undefined
-              }
-            />
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="contactAddress">
-              {t.recruitmentForm.section1.contactAddress}
-            </FieldLabel>
-            <Input id="contactAddress" {...register("contactAddress")} />
-          </Field>
-
           <div className="grid gap-4 sm:grid-cols-2">
             <Field data-invalid={!!errors.mobile1}>
               <FieldLabel htmlFor="mobile1">
@@ -339,48 +714,270 @@ export function RecruitmentFormFields({
             <FieldError errors={errors.email ? [errors.email] : undefined} />
           </Field>
 
-          <Controller
-            control={control}
-            name="managerUid"
-            render={({ field }) => (
-              <Field data-invalid={!!errors.managerUid}>
-                <FieldLabel>
-                  {t.recruitmentForm.section1.managerLabel}
-                </FieldLabel>
-                <Select
-                  value={field.value}
-                  onValueChange={uid => {
-                    field.onChange(uid);
-                    const manager = managers.find(m => m.uid === uid);
-                    setValue("managerName", manager?.name ?? "");
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue
-                      placeholder={
-                        t.recruitmentForm.section1.managerPlaceholder
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {managers.map(manager => (
-                      <SelectItem key={manager.uid} value={manager.uid}>
-                        {manager.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError
-                  errors={errors.managerUid ? [errors.managerUid] : undefined}
-                />
-              </Field>
-            )}
-          />
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field>
+              <FieldLabel htmlFor="taxCode">
+                {t.recruitmentForm.section1.taxCode}
+              </FieldLabel>
+              <Input id="taxCode" {...register("taxCode")} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="taxCodeIssueDate">
+                {t.recruitmentForm.section1.taxCodeIssueDate}
+              </FieldLabel>
+              <Input
+                id="taxCodeIssueDate"
+                type="date"
+                {...register("taxCodeIssueDate")}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="taxCodeIssuePlace">
+                {t.recruitmentForm.section1.taxCodeIssuePlace}
+              </FieldLabel>
+              <Input
+                id="taxCodeIssuePlace"
+                {...register("taxCodeIssuePlace")}
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Controller
+              control={control}
+              name="averageMonthlyIncome"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel>
+                    {t.recruitmentForm.section1.averageMonthlyIncomeLabel}
+                  </FieldLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={
+                          t.recruitmentForm.section1
+                            .averageMonthlyIncomePlaceholder
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INCOME_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            />
+            <Field>
+              <FieldLabel htmlFor="potentialCustomers">
+                {t.recruitmentForm.section1.potentialCustomers}
+              </FieldLabel>
+              <Input
+                id="potentialCustomers"
+                {...register("potentialCustomers")}
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Controller
+              control={control}
+              name="educationLevel"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel>
+                    {t.recruitmentForm.section1.educationLevelLabel}
+                  </FieldLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={
+                          t.recruitmentForm.section1.educationLevelPlaceholder
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EDUCATION_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            />
+            <Controller
+              control={control}
+              name="isCivilServant"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel>
+                    {t.recruitmentForm.section1.civilServantLabel}
+                  </FieldLabel>
+                  <RadioGroup
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    className="flex gap-6"
+                  >
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="no" id="civilServant-no" />
+                      <FieldLabel
+                        htmlFor="civilServant-no"
+                        className="font-normal"
+                      >
+                        {t.recruitmentForm.section1.civilServantNo}
+                      </FieldLabel>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="yes" id="civilServant-yes" />
+                      <FieldLabel
+                        htmlFor="civilServant-yes"
+                        className="font-normal"
+                      >
+                        {t.recruitmentForm.section1.civilServantYes}
+                      </FieldLabel>
+                    </div>
+                  </RadioGroup>
+                </Field>
+              )}
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="accountHolderName">
+                {t.recruitmentForm.section1.accountHolderNameLabel}
+              </FieldLabel>
+              <Input
+                id="accountHolderName"
+                disabled
+                placeholder={
+                  t.recruitmentForm.section1.accountHolderNamePlaceholder
+                }
+                value={fullName ?? ""}
+                readOnly
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="bankAccountNumber">
+                {t.recruitmentForm.section1.bankAccountNumberLabel}
+              </FieldLabel>
+              <Input
+                id="bankAccountNumber"
+                {...register("bankAccountNumber")}
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Controller
+              control={control}
+              name="bankName"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel>
+                    {t.recruitmentForm.section1.bankNameLabel}
+                  </FieldLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={
+                          t.recruitmentForm.section1.bankNamePlaceholder
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BANK_OPTIONS.map(bank => (
+                        <SelectItem key={bank} value={bank}>
+                          {bank}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            />
+            <Field>
+              <FieldLabel htmlFor="branch">
+                {t.recruitmentForm.section1.branchLabel}
+              </FieldLabel>
+              <Input id="branch" {...register("branch")} />
+            </Field>
+          </div>
         </FieldGroup>
       </SectionCard>
 
       <SectionCard number={2} title={t.recruitmentForm.section2.title}>
         <FieldGroup>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Controller
+              control={control}
+              name="channel"
+              render={({ field }) => (
+                <Field data-invalid={!!errors.channel}>
+                  <FieldLabel>
+                    {t.recruitmentForm.section2.channelLabel}
+                  </FieldLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={
+                          t.recruitmentForm.section2.channelPlaceholder
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CHANNEL_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldError
+                    errors={errors.channel ? [errors.channel] : undefined}
+                  />
+                </Field>
+              )}
+            />
+            <Controller
+              control={control}
+              name="agencyType"
+              render={({ field }) => (
+                <Field data-invalid={!!errors.agencyType}>
+                  <FieldLabel>
+                    {t.recruitmentForm.section2.agencyTypeLabel}
+                  </FieldLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={
+                          t.recruitmentForm.section2.agencyTypePlaceholder
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AGENCY_TYPE_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldError
+                    errors={errors.agencyType ? [errors.agencyType] : undefined}
+                  />
+                </Field>
+              )}
+            />
+          </div>
+
+          <FieldSeparator />
+
           <Controller
             control={control}
             name="positionApplied"
@@ -428,30 +1025,65 @@ export function RecruitmentFormFields({
             </Field>
           )}
 
+          <FieldSeparator />
+
           <Controller
             control={control}
-            name="referralChannel"
+            name="participatingProgram"
             render={({ field }) => (
-              <Field data-invalid={!!errors.referralChannel}>
+              <Field>
                 <FieldLabel>
-                  {t.recruitmentForm.section2.referralLabel}
+                  {t.recruitmentForm.section2.programLabel}
                 </FieldLabel>
+                <RadioGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="no" id="participatingProgram-no" />
+                    <FieldLabel
+                      htmlFor="participatingProgram-no"
+                      className="font-normal"
+                    >
+                      {t.recruitmentForm.section2.no}
+                    </FieldLabel>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="yes" id="participatingProgram-yes" />
+                    <FieldLabel
+                      htmlFor="participatingProgram-yes"
+                      className="font-normal"
+                    >
+                      {t.recruitmentForm.section2.yes}
+                    </FieldLabel>
+                  </div>
+                </RadioGroup>
+              </Field>
+            )}
+          />
+          {participatingProgram === "yes" && (
+            <Controller
+              control={control}
+              name="programTypes"
+              render={({ field }) => (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {REFERRAL_OPTIONS.map(opt => (
+                  {PROGRAM_OPTIONS.map(opt => (
                     <div key={opt.value} className="flex items-center gap-2">
                       <Checkbox
-                        id={`referral-${opt.value}`}
-                        checked={field.value.includes(opt.value)}
+                        id={`program-${opt.value}`}
+                        checked={(field.value ?? []).includes(opt.value)}
                         onCheckedChange={checked => {
+                          const current = field.value ?? [];
                           field.onChange(
                             checked
-                              ? [...field.value, opt.value]
-                              : field.value.filter(v => v !== opt.value)
+                              ? [...current, opt.value]
+                              : current.filter(v => v !== opt.value)
                           );
                         }}
                       />
                       <FieldLabel
-                        htmlFor={`referral-${opt.value}`}
+                        htmlFor={`program-${opt.value}`}
                         className="font-normal"
                       >
                         {opt.label}
@@ -459,17 +1091,429 @@ export function RecruitmentFormFields({
                     </div>
                   ))}
                 </div>
-                <FieldError
-                  errors={
-                    errors.referralChannel
-                      ? [errors.referralChannel]
-                      : undefined
-                  }
-                />
+              )}
+            />
+          )}
+
+          <FieldSeparator />
+
+          <Controller
+            control={control}
+            name="isRehire"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>
+                  {t.recruitmentForm.section2.rehireLabel}
+                </FieldLabel>
+                <RadioGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="no" id="isRehire-no" />
+                    <FieldLabel htmlFor="isRehire-no" className="font-normal">
+                      {t.recruitmentForm.section2.no}
+                    </FieldLabel>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="yes" id="isRehire-yes" />
+                    <FieldLabel htmlFor="isRehire-yes" className="font-normal">
+                      {t.recruitmentForm.section2.yes}
+                    </FieldLabel>
+                  </div>
+                </RadioGroup>
               </Field>
             )}
           />
-          {referralChannel.includes("other") && (
+
+          <FieldSeparator />
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="recruiterCode">
+                {t.recruitmentForm.section2.recruiterCode}
+              </FieldLabel>
+              <Input id="recruiterCode" {...register("recruiterCode")} />
+            </Field>
+            <Field data-invalid={!!errors.recruiterName}>
+              <FieldLabel htmlFor="recruiterName">
+                {t.recruitmentForm.section2.recruiterName}
+              </FieldLabel>
+              <Input id="recruiterName" {...register("recruiterName")} />
+              <FieldError
+                errors={
+                  errors.recruiterName ? [errors.recruiterName] : undefined
+                }
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="referrerCode">
+                {t.recruitmentForm.section2.referrerCode}
+              </FieldLabel>
+              <Input id="referrerCode" {...register("referrerCode")} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="referrerName">
+                {t.recruitmentForm.section2.referrerName}
+              </FieldLabel>
+              <Input id="referrerName" {...register("referrerName")} />
+            </Field>
+          </div>
+
+          <Field>
+            <FieldLabel htmlFor="sdName">
+              {t.recruitmentForm.section2.sdName}
+            </FieldLabel>
+            <Input id="sdName" {...register("sdName")} />
+          </Field>
+        </FieldGroup>
+      </SectionCard>
+
+      <SectionCard number={3} title={t.recruitmentForm.section3.title}>
+        <FieldGroup>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Controller
+              control={control}
+              name="permanentProvince"
+              render={({ field }) => (
+                <Field data-invalid={!!errors.permanentProvince}>
+                  <FieldLabel>
+                    {t.recruitmentForm.section3.provinceLabel}
+                  </FieldLabel>
+                  <AddressCombobox
+                    items={provinces.map(p => p.name)}
+                    value={field.value}
+                    onValueChange={value => {
+                      field.onChange(value);
+                      setValue("permanentWard", "");
+                    }}
+                    placeholder={t.recruitmentForm.section3.provincePlaceholder}
+                    emptyText={t.searchDialog.empty}
+                    invalid={!!errors.permanentProvince}
+                  />
+                  <FieldError
+                    errors={
+                      errors.permanentProvince
+                        ? [errors.permanentProvince]
+                        : undefined
+                    }
+                  />
+                </Field>
+              )}
+            />
+            <Controller
+              control={control}
+              name="permanentWard"
+              render={({ field }) => (
+                <Field data-invalid={!!errors.permanentWard}>
+                  <FieldLabel>
+                    {t.recruitmentForm.section3.wardLabel}
+                  </FieldLabel>
+                  <AddressCombobox
+                    items={permanentWards}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder={t.recruitmentForm.section3.wardPlaceholder}
+                    emptyText={t.searchDialog.empty}
+                    disabled={permanentWards.length === 0}
+                    invalid={!!errors.permanentWard}
+                  />
+                  <FieldError
+                    errors={
+                      errors.permanentWard ? [errors.permanentWard] : undefined
+                    }
+                  />
+                </Field>
+              )}
+            />
+          </div>
+
+          <Field data-invalid={!!errors.permanentStreetAddress}>
+            <FieldLabel htmlFor="permanentStreetAddress">
+              {t.recruitmentForm.section3.streetLabel}
+            </FieldLabel>
+            <Input
+              id="permanentStreetAddress"
+              {...register("permanentStreetAddress")}
+            />
+            <FieldError
+              errors={
+                errors.permanentStreetAddress
+                  ? [errors.permanentStreetAddress]
+                  : undefined
+              }
+            />
+          </Field>
+        </FieldGroup>
+      </SectionCard>
+
+      <SectionCard number={4} title={t.recruitmentForm.section4.title}>
+        <FieldGroup>
+          <Controller
+            control={control}
+            name="sameAsPermanentAddress"
+            render={({ field }) => (
+              <RadioGroup
+                value={field.value}
+                onValueChange={field.onChange}
+                className="flex gap-6"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="same" id="sameAddress-same" />
+                  <FieldLabel
+                    htmlFor="sameAddress-same"
+                    className="font-normal"
+                  >
+                    {t.recruitmentForm.section4.same}
+                  </FieldLabel>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem
+                    value="different"
+                    id="sameAddress-different"
+                  />
+                  <FieldLabel
+                    htmlFor="sameAddress-different"
+                    className="font-normal"
+                  >
+                    {t.recruitmentForm.section4.different}
+                  </FieldLabel>
+                </div>
+              </RadioGroup>
+            )}
+          />
+          {sameAsPermanentAddress === "different" && (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Controller
+                  control={control}
+                  name="temporaryProvince"
+                  render={({ field }) => (
+                    <Field>
+                      <FieldLabel>
+                        {t.recruitmentForm.section4.provinceLabel}
+                      </FieldLabel>
+                      <AddressCombobox
+                        items={provinces.map(p => p.name)}
+                        value={field.value}
+                        onValueChange={value => {
+                          field.onChange(value);
+                          setValue("temporaryWard", "");
+                        }}
+                        placeholder={
+                          t.recruitmentForm.section4.provincePlaceholder
+                        }
+                        emptyText={t.searchDialog.empty}
+                      />
+                    </Field>
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="temporaryWard"
+                  render={({ field }) => (
+                    <Field>
+                      <FieldLabel>
+                        {t.recruitmentForm.section4.wardLabel}
+                      </FieldLabel>
+                      <AddressCombobox
+                        items={temporaryWards}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder={t.recruitmentForm.section4.wardPlaceholder}
+                        emptyText={t.searchDialog.empty}
+                        disabled={temporaryWards.length === 0}
+                      />
+                    </Field>
+                  )}
+                />
+              </div>
+
+              <Field>
+                <FieldLabel htmlFor="temporaryStreetAddress">
+                  {t.recruitmentForm.section4.streetLabel}
+                </FieldLabel>
+                <Input
+                  id="temporaryStreetAddress"
+                  {...register("temporaryStreetAddress")}
+                />
+              </Field>
+            </>
+          )}
+        </FieldGroup>
+      </SectionCard>
+
+      <SectionCard number={5} title={t.recruitmentForm.section5.title}>
+        <FieldGroup>
+          <Controller
+            control={control}
+            name="hasInsuranceExperience"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>
+                  {t.recruitmentForm.section5.hasInsuranceExperienceLabel}
+                </FieldLabel>
+                <RadioGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="no" id="hasInsuranceExperience-no" />
+                    <FieldLabel
+                      htmlFor="hasInsuranceExperience-no"
+                      className="font-normal"
+                    >
+                      {t.recruitmentForm.section5.no}
+                    </FieldLabel>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem
+                      value="yes"
+                      id="hasInsuranceExperience-yes"
+                    />
+                    <FieldLabel
+                      htmlFor="hasInsuranceExperience-yes"
+                      className="font-normal"
+                    >
+                      {t.recruitmentForm.section5.yes}
+                    </FieldLabel>
+                  </div>
+                </RadioGroup>
+              </Field>
+            )}
+          />
+
+          <FieldSeparator />
+
+          {workHistoryFields.map((field, index) => (
+            <div key={field.id} className="flex flex-col gap-4">
+              <p className="text-sm font-medium">
+                {t.recruitmentForm.section5.companyHeading(index + 1)}
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor={`workHistory.${index}.fromDate`}>
+                    {t.recruitmentForm.section5.fromDate}
+                  </FieldLabel>
+                  <Input
+                    id={`workHistory.${index}.fromDate`}
+                    placeholder={
+                      t.recruitmentForm.section5.monthYearPlaceholder
+                    }
+                    {...register(`workHistory.${index}.fromDate` as const)}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={`workHistory.${index}.toDate`}>
+                    {t.recruitmentForm.section5.toDate}
+                  </FieldLabel>
+                  <Input
+                    id={`workHistory.${index}.toDate`}
+                    placeholder={
+                      t.recruitmentForm.section5.monthYearPlaceholder
+                    }
+                    {...register(`workHistory.${index}.toDate` as const)}
+                  />
+                </Field>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor={`workHistory.${index}.title`}>
+                    {t.recruitmentForm.section5.jobTitle}
+                  </FieldLabel>
+                  <Input
+                    id={`workHistory.${index}.title`}
+                    {...register(`workHistory.${index}.title` as const)}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel
+                    htmlFor={`workHistory.${index}.companyNameAddress`}
+                  >
+                    {t.recruitmentForm.section5.companyNameAddress}
+                  </FieldLabel>
+                  <Input
+                    id={`workHistory.${index}.companyNameAddress`}
+                    {...register(
+                      `workHistory.${index}.companyNameAddress` as const
+                    )}
+                  />
+                </Field>
+              </div>
+              {workHistoryFields.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive w-fit"
+                  onClick={() => removeWorkHistory(index)}
+                >
+                  <IconX className="size-4" />
+                  {t.recruitmentForm.section5.removeCompany}
+                </Button>
+              )}
+              {index < workHistoryFields.length - 1 && <FieldSeparator />}
+            </div>
+          ))}
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-fit"
+            onClick={() =>
+              appendWorkHistory({
+                fromDate: "",
+                toDate: "",
+                title: "",
+                companyNameAddress: "",
+              })
+            }
+          >
+            <IconPlus className="size-4" />
+            {t.recruitmentForm.section5.addCompany}
+          </Button>
+        </FieldGroup>
+      </SectionCard>
+
+      <SectionCard number={6} title={t.recruitmentForm.section6.title}>
+        <FieldGroup>
+          <Controller
+            control={control}
+            name="referralChannel"
+            render={({ field }) => (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {REFERRAL_OPTIONS.map(opt => (
+                  <div key={opt.value} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`referral-${opt.value}`}
+                      checked={(field.value ?? []).includes(opt.value)}
+                      onCheckedChange={checked => {
+                        const current = field.value ?? [];
+                        field.onChange(
+                          checked
+                            ? [...current, opt.value]
+                            : current.filter(v => v !== opt.value)
+                        );
+                      }}
+                    />
+                    <FieldLabel
+                      htmlFor={`referral-${opt.value}`}
+                      className="font-normal"
+                    >
+                      {opt.label}
+                    </FieldLabel>
+                  </div>
+                ))}
+              </div>
+            )}
+          />
+          {(watch("referralChannel") ?? []).includes("other") && (
             <Field>
               <FieldLabel htmlFor="referralOther">
                 {t.recruitmentForm.section2.specifyOther}
@@ -480,78 +1524,21 @@ export function RecruitmentFormFields({
         </FieldGroup>
       </SectionCard>
 
-      <SectionCard number={3} title={t.recruitmentForm.section3.title}>
-        <FieldGroup>
-          <Controller
-            control={control}
-            name="familyStatus"
-            render={({ field }) => (
-              <Field data-invalid={!!errors.familyStatus}>
-                <RadioGroup
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  className="grid gap-3 sm:grid-cols-2"
-                >
-                  {FAMILY_STATUS_OPTIONS.map(opt => (
-                    <div key={opt.value} className="flex items-center gap-2">
-                      <RadioGroupItem
-                        value={opt.value}
-                        id={`family-${opt.value}`}
-                      />
-                      <FieldLabel
-                        htmlFor={`family-${opt.value}`}
-                        className="font-normal"
-                      >
-                        {opt.label}
-                      </FieldLabel>
-                    </div>
-                  ))}
-                </RadioGroup>
-                <FieldError
-                  errors={
-                    errors.familyStatus ? [errors.familyStatus] : undefined
-                  }
-                />
-              </Field>
-            )}
-          />
-          {familyStatus === "married_children" && (
-            <Field>
-              <FieldLabel htmlFor="childrenCount">
-                {t.recruitmentForm.section3.childrenCount}
-              </FieldLabel>
-              <Input id="childrenCount" {...register("childrenCount")} />
-            </Field>
-          )}
-          {familyStatus === "other" && (
-            <Field>
-              <FieldLabel htmlFor="familyStatusOther">
-                {t.recruitmentForm.section3.specifyOther}
-              </FieldLabel>
-              <Input
-                id="familyStatusOther"
-                {...register("familyStatusOther")}
-              />
-            </Field>
-          )}
-        </FieldGroup>
-      </SectionCard>
-
-      <SectionCard number={4} title={t.recruitmentForm.section4.title}>
+      <SectionCard number={7} title={t.recruitmentForm.section7.title}>
         <FieldGroup>
           <div className="bg-muted text-muted-foreground rounded-lg p-4 text-sm">
             <span className="text-foreground font-semibold">
-              {t.recruitmentForm.section4.definitionLabel}
+              {t.recruitmentForm.section7.definitionLabel}
             </span>{" "}
-            {t.recruitmentForm.section4.definitionText}
+            {t.recruitmentForm.section7.definitionText}
           </div>
           <Controller
             control={control}
-            name="pepStatus"
+            name="hasPepRelationship"
             render={({ field }) => (
-              <Field>
+              <Field data-invalid={!!errors.hasPepRelationship}>
                 <FieldLabel>
-                  {t.recruitmentForm.section4.questionLabel}
+                  {t.recruitmentForm.section7.questionLabel}
                 </FieldLabel>
                 <RadioGroup
                   value={field.value}
@@ -559,31 +1546,44 @@ export function RecruitmentFormFields({
                   className="flex gap-6"
                 >
                   <div className="flex items-center gap-2">
-                    <RadioGroupItem value="no" id="pepStatus-no" />
-                    <FieldLabel htmlFor="pepStatus-no" className="font-normal">
-                      {t.recruitmentForm.section4.no}
+                    <RadioGroupItem value="no" id="hasPepRelationship-no" />
+                    <FieldLabel
+                      htmlFor="hasPepRelationship-no"
+                      className="font-normal"
+                    >
+                      {t.recruitmentForm.section7.no}
                     </FieldLabel>
                   </div>
                   <div className="flex items-center gap-2">
-                    <RadioGroupItem value="yes" id="pepStatus-yes" />
-                    <FieldLabel htmlFor="pepStatus-yes" className="font-normal">
-                      {t.recruitmentForm.section4.yes}
+                    <RadioGroupItem value="yes" id="hasPepRelationship-yes" />
+                    <FieldLabel
+                      htmlFor="hasPepRelationship-yes"
+                      className="font-normal"
+                    >
+                      {t.recruitmentForm.section7.yes}
                     </FieldLabel>
                   </div>
                 </RadioGroup>
+                <FieldError
+                  errors={
+                    errors.hasPepRelationship
+                      ? [errors.hasPepRelationship]
+                      : undefined
+                  }
+                />
               </Field>
             )}
           />
-          {pepStatus === "yes" && (
+          {hasPepRelationship === "yes" && (
             <FieldGroup>
               <Field data-invalid={!!errors.pepRelationship}>
                 <FieldLabel htmlFor="pepRelationship">
-                  {t.recruitmentForm.section4.relationship}
+                  {t.recruitmentForm.section7.relationship}
                 </FieldLabel>
                 <Input
                   id="pepRelationship"
                   placeholder={
-                    t.recruitmentForm.section4.relationshipPlaceholder
+                    t.recruitmentForm.section7.relationshipPlaceholder
                   }
                   {...register("pepRelationship")}
                 />
@@ -598,7 +1598,7 @@ export function RecruitmentFormFields({
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field data-invalid={!!errors.pepFullName}>
                   <FieldLabel htmlFor="pepFullName">
-                    {t.recruitmentForm.section4.fullName}
+                    {t.recruitmentForm.section7.fullName}
                   </FieldLabel>
                   <Input id="pepFullName" {...register("pepFullName")} />
                   <FieldError
@@ -609,7 +1609,7 @@ export function RecruitmentFormFields({
                 </Field>
                 <Field data-invalid={!!errors.pepPosition}>
                   <FieldLabel htmlFor="pepPosition">
-                    {t.recruitmentForm.section4.position}
+                    {t.recruitmentForm.section7.position}
                   </FieldLabel>
                   <Input id="pepPosition" {...register("pepPosition")} />
                   <FieldError
@@ -621,7 +1621,7 @@ export function RecruitmentFormFields({
               </div>
               <Field data-invalid={!!errors.pepOrganization}>
                 <FieldLabel htmlFor="pepOrganization">
-                  {t.recruitmentForm.section4.organization}
+                  {t.recruitmentForm.section7.organization}
                 </FieldLabel>
                 <Input id="pepOrganization" {...register("pepOrganization")} />
                 <FieldError
@@ -637,89 +1637,281 @@ export function RecruitmentFormFields({
         </FieldGroup>
       </SectionCard>
 
-      <SectionCard number={5} title={t.recruitmentForm.section5.title}>
+      <SectionCard number={8} title={t.recruitmentForm.section8.title}>
         <FieldGroup>
-          <p className="text-sm font-medium">
-            {t.recruitmentForm.section5.currentCompany}
-          </p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field>
-              <FieldLabel htmlFor="currentCompanyName">
-                {t.recruitmentForm.section5.companyName}
-              </FieldLabel>
-              <Input
-                id="currentCompanyName"
-                {...register("currentCompanyName")}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="currentManagerName">
-                {t.recruitmentForm.section5.managerName}
-              </FieldLabel>
-              <Input
-                id="currentManagerName"
-                {...register("currentManagerName")}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="currentManagerContact">
-                {t.recruitmentForm.section5.managerContact}
-              </FieldLabel>
-              <Input
-                id="currentManagerContact"
-                {...register("currentManagerContact")}
-              />
-            </Field>
-          </div>
+          {familyMemberFields.map((field, index) => (
+            <div key={field.id} className="flex flex-col gap-4">
+              <p className="text-sm font-medium">
+                {t.recruitmentForm.section8.memberHeading(index + 1)}
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor={`familyMembers.${index}.name`}>
+                    {t.recruitmentForm.section8.name}
+                  </FieldLabel>
+                  <Input
+                    id={`familyMembers.${index}.name`}
+                    {...register(`familyMembers.${index}.name` as const)}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={`familyMembers.${index}.birthYear`}>
+                    {t.recruitmentForm.section8.birthYear}
+                  </FieldLabel>
+                  <Input
+                    id={`familyMembers.${index}.birthYear`}
+                    {...register(`familyMembers.${index}.birthYear` as const)}
+                  />
+                </Field>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Controller
+                  control={control}
+                  name={`familyMembers.${index}.relationship` as const}
+                  render={({ field: relField }) => (
+                    <Field>
+                      <FieldLabel>
+                        {t.recruitmentForm.section8.relationshipLabel}
+                      </FieldLabel>
+                      <Select
+                        value={relField.value}
+                        onValueChange={relField.onChange}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue
+                            placeholder={
+                              t.recruitmentForm.section8.relationshipPlaceholder
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {RELATIONSHIP_OPTIONS.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+                />
+                <Field>
+                  <FieldLabel htmlFor={`familyMembers.${index}.occupation`}>
+                    {t.recruitmentForm.section8.occupation}
+                  </FieldLabel>
+                  <Input
+                    id={`familyMembers.${index}.occupation`}
+                    {...register(`familyMembers.${index}.occupation` as const)}
+                  />
+                </Field>
+              </div>
+              <Field>
+                <FieldLabel htmlFor={`familyMembers.${index}.address`}>
+                  {t.recruitmentForm.section8.address}
+                </FieldLabel>
+                <Input
+                  id={`familyMembers.${index}.address`}
+                  {...register(`familyMembers.${index}.address` as const)}
+                />
+              </Field>
+              {familyMemberFields.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive w-fit"
+                  onClick={() => removeFamilyMember(index)}
+                >
+                  <IconX className="size-4" />
+                  {t.recruitmentForm.section8.removeMember}
+                </Button>
+              )}
+              {index < familyMemberFields.length - 1 && <FieldSeparator />}
+            </div>
+          ))}
 
-          <p className="text-sm font-medium">
-            {t.recruitmentForm.section5.previousCompany}
-          </p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field>
-              <FieldLabel htmlFor="previousCompanyName">
-                {t.recruitmentForm.section5.companyName}
-              </FieldLabel>
-              <Input
-                id="previousCompanyName"
-                {...register("previousCompanyName")}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="previousManagerName">
-                {t.recruitmentForm.section5.managerName}
-              </FieldLabel>
-              <Input
-                id="previousManagerName"
-                {...register("previousManagerName")}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="previousManagerContact">
-                {t.recruitmentForm.section5.managerContact}
-              </FieldLabel>
-              <Input
-                id="previousManagerContact"
-                {...register("previousManagerContact")}
-              />
-            </Field>
-          </div>
+          {familyMemberFields.length < 4 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-fit"
+              onClick={() =>
+                appendFamilyMember({
+                  name: "",
+                  birthYear: "",
+                  relationship: "",
+                  occupation: "",
+                  address: "",
+                })
+              }
+            >
+              <IconPlus className="size-4" />
+              {t.recruitmentForm.section8.addMember}
+            </Button>
+          )}
         </FieldGroup>
       </SectionCard>
 
-      <SectionCard number={6} title={t.recruitmentForm.section6.title}>
+      <SectionCard number={9} title={t.recruitmentForm.section9.title}>
         <FieldGroup>
-          {OPEN_QUESTIONS.map((q, i) => (
-            <Field key={q.name} data-invalid={!!errors[q.name]}>
-              <FieldLabel htmlFor={q.name}>
-                {i + 1}) {q.label} *
+          <Controller
+            control={control}
+            name="q1Experience"
+            render={({ field }) => (
+              <Field data-invalid={!!errors.q1Experience}>
+                <FieldLabel>{t.recruitmentForm.section9.q1Label}</FieldLabel>
+                <RadioGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="no" id="q1Experience-no" />
+                    <FieldLabel
+                      htmlFor="q1Experience-no"
+                      className="font-normal"
+                    >
+                      {t.recruitmentForm.section9.no}
+                    </FieldLabel>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="yes" id="q1Experience-yes" />
+                    <FieldLabel
+                      htmlFor="q1Experience-yes"
+                      className="font-normal"
+                    >
+                      {t.recruitmentForm.section9.yes}
+                    </FieldLabel>
+                  </div>
+                </RadioGroup>
+                <FieldError
+                  errors={
+                    errors.q1Experience ? [errors.q1Experience] : undefined
+                  }
+                />
+              </Field>
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="q2View"
+            render={({ field }) => (
+              <Field data-invalid={!!errors.q2View}>
+                <FieldLabel>{t.recruitmentForm.section9.q2Label}</FieldLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue
+                      placeholder={t.recruitmentForm.section9.selectPlaceholder}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Q2_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldError
+                  errors={errors.q2View ? [errors.q2View] : undefined}
+                />
+              </Field>
+            )}
+          />
+          {q2View === "other" && (
+            <Field>
+              <FieldLabel htmlFor="q2ViewOther">
+                {t.recruitmentForm.section9.specifyOther}
               </FieldLabel>
-              <Textarea id={q.name} rows={3} {...register(q.name)} />
-              <FieldError
-                errors={errors[q.name] ? [errors[q.name]!] : undefined}
+              <Input id="q2ViewOther" {...register("q2ViewOther")} />
+            </Field>
+          )}
+
+          <Controller
+            control={control}
+            name="q3FamilyReaction"
+            render={({ field }) => (
+              <Field data-invalid={!!errors.q3FamilyReaction}>
+                <FieldLabel>{t.recruitmentForm.section9.q3Label}</FieldLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue
+                      placeholder={t.recruitmentForm.section9.selectPlaceholder}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Q3_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldError
+                  errors={
+                    errors.q3FamilyReaction
+                      ? [errors.q3FamilyReaction]
+                      : undefined
+                  }
+                />
+              </Field>
+            )}
+          />
+          {q3FamilyReaction === "other" && (
+            <Field>
+              <FieldLabel htmlFor="q3FamilyReactionOther">
+                {t.recruitmentForm.section9.specifyOther}
+              </FieldLabel>
+              <Input
+                id="q3FamilyReactionOther"
+                {...register("q3FamilyReactionOther")}
               />
             </Field>
-          ))}
+          )}
+
+          <Controller
+            control={control}
+            name="q4FirstTenPeople"
+            render={({ field }) => (
+              <Field data-invalid={!!errors.q4FirstTenPeople}>
+                <FieldLabel>{t.recruitmentForm.section9.q4Label}</FieldLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue
+                      placeholder={t.recruitmentForm.section9.selectPlaceholder}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Q4_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldError
+                  errors={
+                    errors.q4FirstTenPeople
+                      ? [errors.q4FirstTenPeople]
+                      : undefined
+                  }
+                />
+              </Field>
+            )}
+          />
+          {q4FirstTenPeople === "other" && (
+            <Field>
+              <FieldLabel htmlFor="q4FirstTenPeopleOther">
+                {t.recruitmentForm.section9.specifyOther}
+              </FieldLabel>
+              <Input
+                id="q4FirstTenPeopleOther"
+                {...register("q4FirstTenPeopleOther")}
+              />
+            </Field>
+          )}
 
           <Controller
             control={control}
@@ -729,9 +1921,7 @@ export function RecruitmentFormFields({
                 data-slot="checkbox-group"
                 data-invalid={!!errors.q5Training}
               >
-                <FieldLabel>
-                  {t.recruitmentForm.section6.trainingQuestion}
-                </FieldLabel>
+                <FieldLabel>{t.recruitmentForm.section9.q5Label}</FieldLabel>
                 {TRAINING_OPTIONS.map(opt => (
                   <Field
                     key={opt.value}
@@ -764,21 +1954,43 @@ export function RecruitmentFormFields({
             )}
           />
 
-          <Field data-invalid={!!errors.q6}>
-            <FieldLabel htmlFor="q6">
-              6) {OPEN_QUESTIONS.find(q => q.name === "q6")?.label}
+          <Field data-invalid={!!errors.q6Support}>
+            <FieldLabel htmlFor="q6Support">
+              {t.recruitmentForm.section9.q6Label}
             </FieldLabel>
-            <Textarea id="q6" rows={3} {...register("q6")} />
-            <FieldError errors={errors.q6 ? [errors.q6] : undefined} />
+            <Textarea id="q6Support" rows={3} {...register("q6Support")} />
+            <FieldError
+              errors={errors.q6Support ? [errors.q6Support] : undefined}
+            />
           </Field>
         </FieldGroup>
       </SectionCard>
 
       <SectionCard
-        number={7}
-        title={t.recruitmentForm.section7.title}
-        description={t.recruitmentForm.section7.description(MAX_FILES)}
+        number={10}
+        title={t.recruitmentForm.section10.title}
+        description={t.recruitmentForm.section10.description(MAX_FILES)}
       >
+        <div className="border-input bg-muted/30 rounded-lg border p-4">
+          <p className="text-muted-foreground text-sm">
+            {t.recruitmentForm.section10.templatesIntro}
+          </p>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {TEMPLATE_DOCUMENTS.map(doc => (
+              <li key={doc.file}>
+                <a
+                  href={`/templates/${doc.file}`}
+                  download
+                  className="border-input bg-background hover:bg-muted/50 flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+                >
+                  <IconDownload className="text-muted-foreground size-4 shrink-0" />
+                  <span className="flex-1 truncate">{doc.label}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <Field>
           <label
             className={`flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed py-10 text-center ${
@@ -793,10 +2005,10 @@ export function RecruitmentFormFields({
               <IconCloudUpload className="text-muted-foreground size-6" />
             )}
             <span className="text-sm font-medium">
-              {t.recruitmentForm.section7.dropzoneTitle}
+              {t.recruitmentForm.section10.dropzoneTitle}
             </span>
             <span className="text-muted-foreground text-xs">
-              {t.recruitmentForm.section7.dropzoneSubtitle}
+              {t.recruitmentForm.section10.dropzoneSubtitle}
             </span>
             <input
               type="file"
@@ -832,7 +2044,7 @@ export function RecruitmentFormFields({
                       >
                         <IconDownload className="size-4" />
                         <span className="sr-only">
-                          {t.recruitmentForm.section7.downloadSr}
+                          {t.recruitmentForm.section10.downloadSr}
                         </span>
                       </button>
                     )}
@@ -843,7 +2055,7 @@ export function RecruitmentFormFields({
                     >
                       <IconX className="size-4" />
                       <span className="sr-only">
-                        {t.recruitmentForm.section7.removeSr}
+                        {t.recruitmentForm.section10.removeSr}
                       </span>
                     </button>
                   </span>
@@ -854,7 +2066,7 @@ export function RecruitmentFormFields({
         </Field>
       </SectionCard>
 
-      <SectionCard number={8} title={t.recruitmentForm.section8.title}>
+      <SectionCard number={11} title={t.recruitmentForm.section11.title}>
         <FieldGroup data-slot="checkbox-group">
           <Field orientation="horizontal" className="items-start">
             <Controller
@@ -869,7 +2081,7 @@ export function RecruitmentFormFields({
               )}
             />
             <FieldLabel htmlFor="commitmentVoluntary" className="font-normal">
-              {t.recruitmentForm.section8.voluntary}
+              {t.recruitmentForm.section11.voluntary}
             </FieldLabel>
           </Field>
           <FieldError
@@ -893,7 +2105,7 @@ export function RecruitmentFormFields({
               )}
             />
             <FieldLabel htmlFor="commitmentDataConsent" className="font-normal">
-              {t.recruitmentForm.section8.dataConsent}
+              {t.recruitmentForm.section11.dataConsent}
             </FieldLabel>
           </Field>
           <FieldError
@@ -904,13 +2116,93 @@ export function RecruitmentFormFields({
             }
           />
 
-          <Field data-invalid={!!errors.signatureName}>
-            <FieldLabel htmlFor="signatureName">
-              {t.recruitmentForm.section8.signature}
+          <Controller
+            control={control}
+            name="confirmationConsent"
+            render={({ field }) => (
+              <Field data-invalid={!!errors.confirmationConsent}>
+                <FieldLabel>
+                  {t.recruitmentForm.section11.consentLabel}
+                </FieldLabel>
+                <RadioGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="no" id="confirmationConsent-no" />
+                    <FieldLabel
+                      htmlFor="confirmationConsent-no"
+                      className="font-normal"
+                    >
+                      {t.recruitmentForm.section11.no}
+                    </FieldLabel>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="yes" id="confirmationConsent-yes" />
+                    <FieldLabel
+                      htmlFor="confirmationConsent-yes"
+                      className="font-normal"
+                    >
+                      {t.recruitmentForm.section11.yes}
+                    </FieldLabel>
+                  </div>
+                </RadioGroup>
+                <FieldError
+                  errors={
+                    errors.confirmationConsent
+                      ? [errors.confirmationConsent]
+                      : undefined
+                  }
+                />
+              </Field>
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="confirmationMethod"
+            render={({ field }) => (
+              <Field data-invalid={!!errors.confirmationMethod}>
+                <FieldLabel>
+                  {t.recruitmentForm.section11.methodLabel}
+                </FieldLabel>
+                <RadioGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem
+                      value="handwritten"
+                      id="confirmationMethod-handwritten"
+                    />
+                    <FieldLabel
+                      htmlFor="confirmationMethod-handwritten"
+                      className="font-normal"
+                    >
+                      {t.recruitmentForm.section11.handwritten}
+                    </FieldLabel>
+                  </div>
+                </RadioGroup>
+                <FieldError
+                  errors={
+                    errors.confirmationMethod
+                      ? [errors.confirmationMethod]
+                      : undefined
+                  }
+                />
+              </Field>
+            )}
+          />
+
+          <Field data-invalid={!!errors.signDate}>
+            <FieldLabel htmlFor="signDate">
+              {t.recruitmentForm.section11.signDateLabel}
             </FieldLabel>
-            <Input id="signatureName" {...register("signatureName")} />
+            <Input id="signDate" type="date" {...register("signDate")} />
             <FieldError
-              errors={errors.signatureName ? [errors.signatureName] : undefined}
+              errors={errors.signDate ? [errors.signDate] : undefined}
             />
           </Field>
         </FieldGroup>
