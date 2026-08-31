@@ -15,11 +15,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DataTable } from "@/components/ui/data-table/data-table";
-import { RecruitmentDetailDialog } from "@/components/recruitment-detail-dialog";
 import { createRecruitmentsColumns } from "@/components/recruitments-columns";
 import {
   deleteRecruitmentSubmission,
-  updateRecruitmentSubmissionStatus,
   type TRecruitmentSubmission,
 } from "@/server/recruitment-actions";
 
@@ -29,31 +27,7 @@ export function RecruitmentsView({
   initialSubmissions: TRecruitmentSubmission[];
 }) {
   const [submissions, setSubmissions] = useState(initialSubmissions);
-  const [viewing, setViewing] = useState<TRecruitmentSubmission | null>(null);
   const [deleting, setDeleting] = useState<TRecruitmentSubmission | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const handleStatusChange = async (id: string, status: string) => {
-    setIsSaving(true);
-    try {
-      const result = await updateRecruitmentSubmissionStatus(id, status);
-      if (!result.ok) {
-        toast.error(result.error);
-        return;
-      }
-      setSubmissions(prev =>
-        prev.map(s =>
-          s.id === id
-            ? { ...s, status: status as TRecruitmentSubmission["status"] }
-            : s
-        )
-      );
-      setViewing(null);
-      toast.success("Đã cập nhật trạng thái");
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!deleting) return;
@@ -71,7 +45,6 @@ export function RecruitmentsView({
   };
 
   const columns = createRecruitmentsColumns({
-    onView: setViewing,
     onDelete: setDeleting,
   });
 
@@ -82,14 +55,6 @@ export function RecruitmentsView({
         columns={columns}
         emptyMessage="Chưa có hồ sơ ứng viên nào."
         enableColumnVisibility={false}
-      />
-
-      <RecruitmentDetailDialog
-        submission={viewing}
-        open={!!viewing}
-        onOpenChange={open => !open && setViewing(null)}
-        onStatusChange={handleStatusChange}
-        isSaving={isSaving}
       />
 
       <AlertDialog

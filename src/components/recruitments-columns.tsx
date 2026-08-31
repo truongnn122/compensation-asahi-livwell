@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { IconEye, IconTrash } from "@tabler/icons-react";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -31,10 +33,8 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive"> =
   };
 
 export function createRecruitmentsColumns({
-  onView,
   onDelete,
 }: {
-  onView: (submission: TRecruitmentSubmission) => void;
   onDelete: (submission: TRecruitmentSubmission) => void;
 }): ColumnDef<TRecruitmentSubmission & { id: string }>[] {
   return [
@@ -80,13 +80,11 @@ export function createRecruitmentsColumns({
       header: "",
       cell: ({ row }) => (
         <div className="flex justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => onView(row.original)}
-          >
-            <IconEye className="size-4" />
-            <span className="sr-only">Xem chi tiết</span>
+          <Button variant="ghost" size="icon-sm" asChild>
+            <Link href={`/recruitments/${row.original.id}`}>
+              <IconEye className="size-4" />
+              <span className="sr-only">Xem chi tiết</span>
+            </Link>
           </Button>
           <Button
             variant="ghost"

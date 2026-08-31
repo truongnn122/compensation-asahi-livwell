@@ -14,6 +14,7 @@ import {
 const COLLECTION = "recruitment_submissions";
 const STATUS_VALUES = ["new", "contacted", "hired", "rejected"] as const;
 export type TRecruitmentStatus = (typeof STATUS_VALUES)[number];
+const SIGNED_URL_TTL_MS = 15 * 60 * 1000;
 
 export type TRecruitmentSubmission = RecruitmentValues & {
   id: string;
@@ -130,6 +131,68 @@ export async function listRecruitmentSubmissions(): Promise<
     return { ok: true, data: submissions };
   } catch {
     return { ok: false, error: "Không thể tải danh sách ứng viên." };
+  }
+}
+
+export async function getRecruitmentSubmission(
+  id: string
+): Promise<ActionResult<TRecruitmentSubmission>> {
+  const check = await requireRecruitmentAccess();
+  if (!check.ok) return check;
+
+  try {
+    const doc = await adminDb.collection(COLLECTION).doc(id).get();
+    if (!doc.exists) {
+      return { ok: false, error: "Không tìm thấy hồ sơ ứng viên." };
+    }
+
+    return {
+      ok: true,
+      data: { id: doc.id, ...doc.data() } as TRecruitmentSubmission,
+    };
+  } catch {
+    return { ok: false, error: "Không thể tải hồ sơ ứng viên." };
+  }
+}
+
+export async function updateRecruitmentSubmission(
+  id: string,
+  values: RecruitmentValues
+): Promise<ActionResult> {
+  const check = await requireRecruitmentAccess();
+  if (!check.ok) return check;
+
+  const parsed = recruitmentSchema.safeParse(values);
+  if (!parsed.success) {
+    return { ok: false, error: "Dữ liệu không hợp lệ." };
+  }
+
+  try {
+    await adminDb.collection(COLLECTION).doc(id).update(parsed.data);
+    return { ok: true, data: null };
+  } catch {
+    return { ok: false, error: "Không thể cập nhật hồ sơ ứng viên." };
+  }
+}
+
+export async function getRecruitmentAttachmentUrl(
+  storagePath: string
+): Promise<ActionResult<{ url: string }>> {
+  const check = await requireRecruitmentAccess();
+  if (!check.ok) return check;
+
+  try {
+    const [url] = await adminStorage
+      .bucket()
+      .file(storagePath)
+      .getSignedUrl({
+        action: "read",
+        expires: Date.now() + SIGNED_URL_TTL_MS,
+      });
+
+    return { ok: true, data: { url } };
+  } catch {
+    return { ok: false, error: "Không thể tạo liên kết tải xuống." };
   }
 }
 
