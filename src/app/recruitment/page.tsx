@@ -19,14 +19,7 @@ export default async function RecruitmentPage() {
 
   return (
     <div className="relative min-h-svh overflow-hidden">
-      <video
-        className="fixed inset-0 h-full w-full object-cover"
-        src="/brand/videos/looping-av1.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-      />
+      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat [background-image:url('/brand/images-webp/bg.webp')]" />
       <div className="fixed inset-0 bg-[oklch(0.283_0.121_260.9)]/55" />
       <div className="fixed inset-x-0 top-0 h-40 bg-gradient-to-b from-[oklch(0.283_0.121_260.9)]/80 to-transparent" />
 

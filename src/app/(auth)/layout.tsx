@@ -13,14 +13,7 @@ export default async function AuthLayout({
   return (
     <div className="flex min-h-svh w-full">
       <div className="relative hidden w-[60%] overflow-hidden lg:flex lg:flex-col">
-        <video
-          className="absolute inset-0 h-full w-full object-cover"
-          src="/brand/videos/looping-av1.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat [background-image:url('/brand/images-webp/bg.webp')]" />
         <div className="absolute inset-0 bg-[oklch(0.283_0.121_260.9)]/55" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[oklch(0.283_0.121_260.9)]/80 to-transparent" />
 
@@ -63,14 +56,7 @@ export default async function AuthLayout({
         </div>
       </div>
       <div className="relative flex w-full flex-col items-center justify-center p-6 md:p-10 lg:w-[40%]">
-        <video
-          className="absolute inset-0 h-full w-full object-cover lg:hidden"
-          src="/brand/videos/looping-av1.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat [background-image:url('/brand/images-webp/bg.webp')] lg:hidden" />
         <div className="absolute inset-0 bg-[oklch(0.283_0.121_260.9)]/55 lg:hidden" />
         <Image
           src="/brand/logo/ASAHI_HORIZONTAL_VECTOR.svg"
