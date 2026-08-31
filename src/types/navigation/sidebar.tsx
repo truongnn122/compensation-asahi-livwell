@@ -1,9 +1,4 @@
-import {
-  LayoutDashboard,
-  type LucideIcon,
-  UserCheck,
-  Users,
-} from "lucide-react";
+import { type LucideIcon, UserCheck, Users } from "lucide-react";
 
 import { canAccessUsers, type Role } from "@/lib/permissions";
 
@@ -34,7 +29,6 @@ export interface NavGroup {
 
 export function getSidebarItems(role: Role): NavGroup[] {
   const items: NavMainItem[] = [
-    { title: "Bảng điều khiển", url: "/dashboard", icon: LayoutDashboard },
     { title: "Ứng viên tuyển dụng", url: "/recruitments", icon: UserCheck },
   ];
 
