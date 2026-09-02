@@ -26,19 +26,21 @@ export function buildRecruitmentSchema(
     taxCode: z.string().optional(),
     taxCodeIssueDate: z.string().optional(),
     taxCodeIssuePlace: z.string().optional(),
-    averageMonthlyIncome: z
-      .enum(["under5m", "from5to10m", "from10to20m", "from20to50m", "over50m"])
-      .optional(),
-    potentialCustomers: z.string().optional(),
-    educationLevel: z
-      .enum(["thpt", "trungCap", "caoDang", "daiHoc", "sauDaiHoc"])
-      .optional(),
+    averageMonthlyIncome: z.enum(
+      ["under5m", "from5to10m", "from10to20m", "from20to50m", "over50m"],
+      { error: t.averageMonthlyIncomeRequired }
+    ),
+    potentialCustomers: z.string().min(1, t.potentialCustomersRequired),
+    educationLevel: z.enum(
+      ["thpt", "trungCap", "caoDang", "daiHoc", "sauDaiHoc"],
+      { error: t.educationLevelRequired }
+    ),
     isCivilServant: z.enum(["no", "yes"]).optional(),
 
-    accountHolderName: z.string().optional(),
-    bankAccountNumber: z.string().optional(),
-    bankName: z.string().optional(),
-    branch: z.string().optional(),
+    accountHolderName: z.string().min(1, t.accountHolderNameRequired),
+    bankAccountNumber: z.string().min(1, t.bankAccountNumberRequired),
+    bankName: z.string().min(1, t.bankNameRequired),
+    branch: z.string().min(1, t.branchRequired),
 
     channel: z.enum(["agency", "other"], {
       error: t.channelRequired,
@@ -119,37 +121,36 @@ export function buildRecruitmentSchema(
       .optional(),
 
     q1Experience: z.enum(["no", "yes"], { error: t.answerRequired }),
-    q2View: z.enum(
-      [
-        "financial_protection",
-        "savings_investment",
-        "important_not_explored",
-        "hesitant",
-        "other",
-      ],
-      { error: t.answerRequired }
-    ),
+    q2View: z
+      .array(
+        z.enum([
+          "financial_protection",
+          "savings_investment",
+          "important_not_explored",
+          "other",
+        ])
+      )
+      .min(1, t.atLeastOneAnswerRequired),
     q2ViewOther: z.string().optional(),
-    q3FamilyReaction: z.enum(
-      ["supportive", "surprised_respectful", "proud", "other"],
-      { error: t.answerRequired }
-    ),
+    q3FamilyReaction: z
+      .array(z.enum(["supportive", "surprised_respectful", "proud", "other"]))
+      .min(1, t.atLeastOneAnswerRequired),
     q3FamilyReactionOther: z.string().optional(),
-    q4FirstTenPeople: z.enum(
-      [
-        "family",
-        "close_friends",
-        "colleagues_partners",
-        "neighbors_acquaintances",
-        "other",
-      ],
-      { error: t.answerRequired }
-    ),
-    q4FirstTenPeopleOther: z.string().optional(),
+    q4FirstTenPeople: z.string().min(1, t.questionRequired),
     q5Training: z
       .array(z.enum(["lpfc", "sales_skills", "sales_management"]))
       .min(1, t.trainingRequired),
-    q6Support: z.string().min(1, t.questionRequired),
+    q6Support: z
+      .array(
+        z.enum([
+          "product_training",
+          "manager_coaching",
+          "compensation_benefits",
+          "other",
+        ])
+      )
+      .min(1, t.atLeastOneAnswerRequired),
+    q6SupportOther: z.string().optional(),
 
     attachments: z
       .array(

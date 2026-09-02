@@ -295,7 +295,6 @@ export const en: typeof vi = {
         savings_investment: "It's a form of long-term savings/investment",
         important_not_explored:
           "Important, but I haven't looked into it closely",
-        hesitant: "Still hesitant, not fully convinced yet",
         other: "Other",
       },
       q3: {
@@ -309,6 +308,12 @@ export const en: typeof vi = {
         close_friends: "Close friends",
         colleagues_partners: "Colleagues / business partners",
         neighbors_acquaintances: "Neighbors, social acquaintances",
+        other: "Other",
+      },
+      q6: {
+        product_training: "Product knowledge & sales skills training",
+        manager_coaching: "Direct manager coaching and hands-on mentoring",
+        compensation_benefits: "Attractive income, bonus, and benefits policy",
         other: "Other",
       },
     },
@@ -330,20 +335,20 @@ export const en: typeof vi = {
       taxCode: "Tax code",
       taxCodeIssueDate: "Tax code issue date",
       taxCodeIssuePlace: "Tax code place of issue",
-      averageMonthlyIncomeLabel: "Average monthly income",
+      averageMonthlyIncomeLabel: "Average monthly income *",
       averageMonthlyIncomePlaceholder: "Select income level",
-      potentialCustomers: "Number of potential customers",
-      educationLevelLabel: "Education level",
+      potentialCustomers: "Number of potential customers *",
+      educationLevelLabel: "Education level *",
       educationLevelPlaceholder: "Select education level",
       civilServantLabel: "Civil servant / public official",
       civilServantNo: "No",
       civilServantYes: "Yes",
-      accountHolderNameLabel: "Account holder (must match ID card name)",
+      accountHolderNameLabel: "Bank account holder (must match ID card name) *",
       accountHolderNamePlaceholder: "Automatically filled from Full name",
-      bankAccountNumberLabel: "Account number (not an ATM card number)",
-      bankNameLabel: "Bank",
+      bankAccountNumberLabel: "Account number (not an ATM card number) *",
+      bankNameLabel: "Bank *",
       bankNamePlaceholder: "Select a bank",
-      branchLabel: "Branch",
+      branchLabel: "Branch *",
       mobile1: "Mobile 1 *",
       mobile1Placeholder: "09xxxxxxxx",
       mobile2: "Mobile 2",
@@ -378,7 +383,7 @@ export const en: typeof vi = {
       streetLabel: "House number, street name *",
     },
     section4: {
-      title: "Temporary address (if different)",
+      title: "Contact address (if different)",
       same: "Same as permanent address",
       different: "Different",
       provinceLabel: "Province/City",
@@ -421,7 +426,7 @@ export const en: typeof vi = {
       organization: "Organization *",
     },
     section8: {
-      title: "Family relationships",
+      title: "Next of kin",
       memberHeading: (n: number) => `Family member ${n}`,
       name: "Full name",
       birthYear: "Year of birth",
@@ -436,15 +441,15 @@ export const en: typeof vi = {
       title: "Please answer the following questions",
       q1Label:
         "1) Have you seen a family member or someone around you benefit from life insurance?",
-      q2Label: "2) How do you view life insurance?",
+      q2Label: "2) How do you view life insurance? (multiple answers allowed)",
       q3Label:
-        "3) What would your family and friends say if you became a life insurance consultant?",
+        "3) What would your family and friends say if you became a life insurance consultant? (multiple answers allowed)",
       q4Label:
         "4) Who are the first 10 people you would talk to about life insurance?",
       q5Label:
         "5) Are you willing to take part in the following training courses to develop yourself? *",
       q6Label:
-        "6) What support do you hope MVI provides so you can succeed, increase your income, have opportunities for advancement, and improve your skills and knowledge?",
+        "6) What support do you hope Asahi provides so you can succeed, increase your income, have opportunities for advancement, and improve your skills and knowledge? (multiple answers allowed)",
       selectPlaceholder: "Select an answer",
       specifyOther: "Please specify",
       no: "No",
@@ -464,7 +469,7 @@ export const en: typeof vi = {
     section11: {
       title: "Candidate commitments",
       voluntary:
-        "I confirm that exploring this career opportunity and applying to become an agent at MVI is entirely my own voluntary decision, not directed by any other individual or organization.",
+        "I confirm that exploring this career opportunity and applying to become an agent at Asahi is entirely my own voluntary decision, not directed by any other individual or organization.",
       dataConsent:
         "I consent to the processing of my personal data (PDPD) so the system can collect, store, and process my application.",
       consentLabel: "Confirm commitment & PDPD consent *",
@@ -490,12 +495,21 @@ export const en: typeof vi = {
       permanentProvinceRequired: "Please select a province/city",
       permanentWardRequired: "Please select a ward/commune",
       permanentStreetRequired: "Please enter the house number and street name",
+      averageMonthlyIncomeRequired: "Please select an income level",
+      educationLevelRequired: "Please select an education level",
+      accountHolderNameRequired: "Please enter the bank account holder",
+      bankAccountNumberRequired: "Please enter the account number",
+      bankNameRequired: "Please select a bank",
+      branchRequired: "Please enter the branch",
+      potentialCustomersRequired:
+        "Please enter the number of potential customers",
       pepStatusRequired: "Please select an option",
       pepRelationshipRequired: "Please enter your relationship with the PEP",
       pepFullNameRequired: "Please enter the full name",
       pepPositionRequired: "Please enter the position",
       pepOrganizationRequired: "Please enter the organization",
       answerRequired: "Please select an answer",
+      atLeastOneAnswerRequired: "Please select at least one answer",
       questionRequired: "Please answer this question",
       trainingRequired: "Please select at least one training course",
       confirmationConsentRequired:

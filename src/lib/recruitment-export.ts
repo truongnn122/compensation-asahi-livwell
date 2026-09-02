@@ -266,29 +266,29 @@ export function buildAnswerBlocks(
         {
           label: s9.q2Label,
           value: withOther(
-            lookup(opt.q2, submission.q2View),
+            joinLookup(opt.q2, submission.q2View),
             submission.q2ViewOther
           ),
         },
         {
           label: s9.q3Label,
           value: withOther(
-            lookup(opt.q3, submission.q3FamilyReaction),
+            joinLookup(opt.q3, submission.q3FamilyReaction),
             submission.q3FamilyReactionOther
           ),
         },
-        {
-          label: s9.q4Label,
-          value: withOther(
-            lookup(opt.q4, submission.q4FirstTenPeople),
-            submission.q4FirstTenPeopleOther
-          ),
-        },
+        { label: s9.q4Label, value: submission.q4FirstTenPeople || DASH },
         {
           label: s9.q5Label,
           value: joinLookup(opt.training, submission.q5Training),
         },
-        { label: s9.q6Label, value: submission.q6Support || DASH },
+        {
+          label: s9.q6Label,
+          value: withOther(
+            joinLookup(opt.q6, submission.q6Support),
+            submission.q6SupportOther
+          ),
+        },
       ],
     },
     {

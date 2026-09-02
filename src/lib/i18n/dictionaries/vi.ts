@@ -291,7 +291,6 @@ export const vi = {
           "Là công cụ bảo vệ tài chính cần thiết cho gia đình",
         savings_investment: "Là một hình thức tiết kiệm, đầu tư dài hạn",
         important_not_explored: "Quan trọng nhưng bản thân chưa tìm hiểu kỹ",
-        hesitant: "Còn e ngại, chưa thực sự tin tưởng",
         other: "Khác",
       },
       q3: {
@@ -305,6 +304,13 @@ export const vi = {
         close_friends: "Bạn bè thân thiết",
         colleagues_partners: "Đồng nghiệp / đối tác kinh doanh",
         neighbors_acquaintances: "Hàng xóm, người quen xã hội",
+        other: "Khác",
+      },
+      q6: {
+        product_training: "Đào tạo kiến thức sản phẩm & kỹ năng bán hàng",
+        manager_coaching: "Quản lý trực tiếp đồng hành, huấn luyện thực tế",
+        compensation_benefits:
+          "Chính sách thu nhập, thưởng và phúc lợi hấp dẫn",
         other: "Khác",
       },
     },
@@ -326,20 +332,20 @@ export const vi = {
       taxCode: "Mã số thuế",
       taxCodeIssueDate: "Ngày cấp MST",
       taxCodeIssuePlace: "Nơi cấp MST",
-      averageMonthlyIncomeLabel: "Thu nhập bình quân/tháng",
+      averageMonthlyIncomeLabel: "Thu nhập bình quân/tháng *",
       averageMonthlyIncomePlaceholder: "Chọn mức thu nhập",
-      potentialCustomers: "Số KH tiềm năng",
-      educationLevelLabel: "Trình độ học vấn",
+      potentialCustomers: "Số khách hàng tiềm năng *",
+      educationLevelLabel: "Trình độ học vấn *",
       educationLevelPlaceholder: "Chọn trình độ học vấn",
       civilServantLabel: "Công chức/viên chức",
       civilServantNo: "Không",
       civilServantYes: "Có",
-      accountHolderNameLabel: "Chủ tài khoản (trùng tên CCCD)",
+      accountHolderNameLabel: "Chủ tài khoản ngân hàng (trùng tên CCCD) *",
       accountHolderNamePlaceholder: "Tự động lấy theo Họ và tên",
-      bankAccountNumberLabel: "Số tài khoản (không phải số thẻ ATM)",
-      bankNameLabel: "Ngân hàng",
+      bankAccountNumberLabel: "Số tài khoản (không phải số thẻ ATM) *",
+      bankNameLabel: "Ngân hàng *",
       bankNamePlaceholder: "Chọn ngân hàng",
-      branchLabel: "Chi nhánh",
+      branchLabel: "Chi nhánh *",
       mobile1: "Di động 1 *",
       mobile1Placeholder: "09xxxxxxxx",
       mobile2: "Di động 2",
@@ -374,7 +380,7 @@ export const vi = {
       streetLabel: "Số nhà, tên đường *",
     },
     section4: {
-      title: "Địa chỉ tạm trú (nếu khác)",
+      title: "Địa chỉ liên lạc (nếu khác)",
       same: "Giống địa chỉ thường trú",
       different: "Khác",
       provinceLabel: "Tỉnh/Thành phố",
@@ -417,7 +423,7 @@ export const vi = {
       organization: "Đơn vị công tác *",
     },
     section8: {
-      title: "Quan hệ gia đình",
+      title: "Quan hệ nhân thân",
       memberHeading: (n: number) => `Thân nhân ${n}`,
       name: "Họ tên",
       birthYear: "Năm sinh",
@@ -432,15 +438,16 @@ export const vi = {
       title: "Vui lòng trả lời các câu hỏi sau",
       q1Label:
         "1) Trong cuộc sống, anh/chị đã từng thấy người thân hoặc người xung quanh nhận được quyền lợi từ bảo hiểm nhân thọ chưa?",
-      q2Label: "2) Anh/chị nhìn nhận như thế nào về bảo hiểm nhân thọ?",
+      q2Label:
+        "2) Anh/chị nhìn nhận như thế nào về bảo hiểm nhân thọ? (có thể chọn nhiều đáp án)",
       q3Label:
-        "3) Người thân, bạn bè sẽ nói gì nếu anh/chị trở thành tư vấn viên bảo hiểm nhân thọ?",
+        "3) Người thân, bạn bè sẽ nói gì nếu anh/chị trở thành tư vấn viên bảo hiểm nhân thọ? (có thể chọn nhiều đáp án)",
       q4Label:
         "4) Ai là 10 người đầu tiên anh/chị sẽ trò chuyện về bảo hiểm nhân thọ?",
       q5Label:
         "5) Anh/chị có sẵn sàng tham gia các khóa đào tạo sau để phát triển bản thân? *",
       q6Label:
-        "6) Anh/chị mong MVI hỗ trợ gì để thành công, tăng thu nhập, có cơ hội thăng tiến, nâng cao kỹ năng và kiến thức?",
+        "6) Anh/chị mong Asahi hỗ trợ gì để thành công, tăng thu nhập, có cơ hội thăng tiến, nâng cao kỹ năng và kiến thức? (có thể chọn nhiều đáp án)",
       selectPlaceholder: "Chọn một đáp án",
       specifyOther: "Vui lòng ghi rõ",
       no: "Không",
@@ -460,7 +467,7 @@ export const vi = {
     section11: {
       title: "Cam kết của ứng viên",
       voluntary:
-        "Tôi xác nhận việc tìm hiểu cơ hội nghề nghiệp này và ứng tuyển làm đại lý tại MVI hoàn toàn là quyết định tự nguyện của cá nhân tôi, không do bất kỳ cá nhân hay tổ chức nào chi phối.",
+        "Tôi xác nhận việc tìm hiểu cơ hội nghề nghiệp này và ứng tuyển làm đại lý tại Asahi hoàn toàn là quyết định tự nguyện của cá nhân tôi, không do bất kỳ cá nhân hay tổ chức nào chi phối.",
       dataConsent:
         "Tôi đồng ý cho phép xử lý dữ liệu cá nhân (PDPD) để hệ thống thu thập, lưu trữ và xử lý hồ sơ của tôi.",
       consentLabel: "Xác nhận cam kết & đồng ý PDPD *",
@@ -486,12 +493,20 @@ export const vi = {
       permanentProvinceRequired: "Vui lòng chọn tỉnh/thành phố",
       permanentWardRequired: "Vui lòng chọn phường/xã",
       permanentStreetRequired: "Vui lòng nhập số nhà, tên đường",
+      averageMonthlyIncomeRequired: "Vui lòng chọn mức thu nhập",
+      educationLevelRequired: "Vui lòng chọn trình độ học vấn",
+      accountHolderNameRequired: "Vui lòng nhập chủ tài khoản ngân hàng",
+      bankAccountNumberRequired: "Vui lòng nhập số tài khoản",
+      bankNameRequired: "Vui lòng chọn ngân hàng",
+      branchRequired: "Vui lòng nhập chi nhánh",
+      potentialCustomersRequired: "Vui lòng nhập số khách hàng tiềm năng",
       pepStatusRequired: "Vui lòng chọn một lựa chọn",
       pepRelationshipRequired: "Vui lòng nhập mối quan hệ với PEP",
       pepFullNameRequired: "Vui lòng nhập họ và tên",
       pepPositionRequired: "Vui lòng nhập chức vụ",
       pepOrganizationRequired: "Vui lòng nhập đơn vị công tác",
       answerRequired: "Vui lòng chọn một đáp án",
+      atLeastOneAnswerRequired: "Vui lòng chọn ít nhất một đáp án",
       questionRequired: "Vui lòng trả lời câu hỏi này",
       trainingRequired: "Vui lòng chọn ít nhất một khóa đào tạo",
       confirmationConsentRequired:
