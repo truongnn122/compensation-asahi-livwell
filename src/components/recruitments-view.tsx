@@ -30,6 +30,29 @@ export function RecruitmentsView({
   const t = useDictionary();
   const [submissions, setSubmissions] = useState(initialSubmissions);
   const [deleting, setDeleting] = useState<TRecruitmentSubmission | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = async (submission: TRecruitmentSubmission) => {
+    setDownloadingId(submission.id);
+    try {
+      const response = await fetch(
+        `/api/recruitments/${submission.id}/download`
+      );
+      if (!response.ok) throw new Error("download failed");
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${submission.fullName || "recruitment"}.zip`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error(t.errors.recruitment.exportFailed);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const handleDelete = async () => {
     if (!deleting) return;
@@ -49,6 +72,8 @@ export function RecruitmentsView({
   const columns = createRecruitmentsColumns({
     t,
     onDelete: setDeleting,
+    onDownload: handleDownload,
+    downloadingId,
   });
 
   return (

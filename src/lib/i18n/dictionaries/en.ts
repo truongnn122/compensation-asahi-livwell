@@ -188,6 +188,8 @@ export const en: typeof vi = {
     },
     viewSr: "View details",
     deleteSr: "Delete",
+    downloadSr: "Download submission",
+    downloading: "Preparing the download...",
     positionLabels: {
       agent: "Life Planner (Agent)",
       unit_manager: "Unit Manager (UM)",
@@ -519,6 +521,7 @@ export const en: typeof vi = {
       loadFailed: "Unable to load the candidate submission.",
       updateFailed: "Unable to update the candidate submission.",
       downloadUrlFailed: "Unable to generate a download link.",
+      exportFailed: "Unable to generate the submission download.",
       invalidStatus: "Invalid status.",
       statusUpdateFailed: "Unable to update the status.",
       deleteFailed: "Unable to delete the candidate submission.",

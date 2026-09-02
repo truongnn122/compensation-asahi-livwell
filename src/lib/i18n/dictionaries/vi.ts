@@ -185,6 +185,8 @@ export const vi = {
     },
     viewSr: "Xem chi tiết",
     deleteSr: "Xóa",
+    downloadSr: "Tải xuống hồ sơ",
+    downloading: "Đang chuẩn bị tệp tải xuống...",
     positionLabels: {
       agent: "Life Planner (Agent)",
       unit_manager: "Unit Manager (UM)",
@@ -515,6 +517,7 @@ export const vi = {
       loadFailed: "Không thể tải hồ sơ ứng viên.",
       updateFailed: "Không thể cập nhật hồ sơ ứng viên.",
       downloadUrlFailed: "Không thể tạo liên kết tải xuống.",
+      exportFailed: "Không thể tạo tệp tải xuống hồ sơ.",
       invalidStatus: "Trạng thái không hợp lệ.",
       statusUpdateFailed: "Không thể cập nhật trạng thái.",
       deleteFailed: "Không thể xóa hồ sơ ứng viên.",
