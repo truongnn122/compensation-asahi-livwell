@@ -25,3 +25,7 @@ export function canAccessUsers(role: Role) {
 export function canAccessRecruitments(role: Role) {
   return role === "admin" || role === "ad";
 }
+
+export function canAccessCompensation(role: Role) {
+  return role === "admin" || role === "ad";
+}
