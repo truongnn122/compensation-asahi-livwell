@@ -8,6 +8,7 @@ const PROTECTED_PREFIXES = [
   "/documents",
   "/recruitments",
   "/users",
+  "/compensation",
 ];
 
 export function proxy(request: NextRequest) {
@@ -38,6 +39,7 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/compensation/:path*",
     "/settings/:path*",
     "/documents/:path*",
     "/recruitments/:path*",
