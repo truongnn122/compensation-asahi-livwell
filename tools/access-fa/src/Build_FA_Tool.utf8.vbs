@@ -1,7 +1,7 @@
 ' =====================================================================
 ' DỰNG TOOL TÍNH PHỤ CẤP CỐ ĐỊNH (FA) – ALL/AD/2210-005 mục A.II
 ' Chạy: double-click Build_FA_Tool.vbs (cùng thư mục với modFA.bas)
-' Kết quả: FA_Data.accdb (dữ liệu, back-end) + FA_App.accdb (giao diện, front-end)
+' Kết quả: Data.accdb (dữ liệu dùng chung) + FA_App.accdb (tool FA kèm dữ liệu riêng của FA)
 ' Yêu cầu: máy Windows có Microsoft Access 2010 trở lên (hoặc Access Runtime không đủ – cần bản đầy đủ để dựng)
 ' =====================================================================
 Option Explicit
@@ -13,7 +13,7 @@ Const dbText = 10
 Dim fso, here, beFile, feFile, modFile, acc, step
 Set fso = CreateObject("Scripting.FileSystemObject")
 here = fso.GetParentFolderName(WScript.ScriptFullName)
-beFile = here & "\FA_Data.accdb"
+beFile = here & "\Data.accdb"
 feFile = here & "\FA_App.accdb"
 modFile = here & "\modFA.bas"
 
@@ -22,7 +22,7 @@ If Not fso.FileExists(modFile) Then
     WScript.Quit 1
 End If
 If fso.FileExists(beFile) Or fso.FileExists(feFile) Then
-    MsgBox "Đã có FA_Data.accdb hoặc FA_App.accdb trong thư mục này." & vbCrLf & _
+    MsgBox "Đã có Data.accdb hoặc FA_App.accdb trong thư mục này." & vbCrLf & _
            "Đổi tên/di chuyển file cũ rồi chạy lại để tránh ghi đè dữ liệu.", 48, "Dựng tool FA"
     WScript.Quit 1
 End If
@@ -36,7 +36,7 @@ BuildFrontEnd
 
 acc.Quit
 MsgBox "Hoàn tất." & vbCrLf & vbCrLf & _
-       "• FA_Data.accdb: dữ liệu (đặt ở thư mục chung nếu nhiều người dùng)" & vbCrLf & _
+       "• Data.accdb: dữ liệu dùng chung cho mọi khoản thưởng (Tbl_Agent, Tbl_Attendance)" & vbCrLf & _
        "• FA_App.accdb: mở file này để sử dụng" & vbCrLf & vbCrLf & _
        "Lần đầu mở, bấm 'Enable Content' hoặc thêm thư mục vào Trusted Locations.", 64, "Dựng tool FA"
 
@@ -74,11 +74,9 @@ Sub BuildBackEnd()
     Dim db, r
     On Error Resume Next
     acc.NewCurrentDatabase beFile
-    Check "Tạo FA_Data.accdb"
+    Check "Tạo Data.accdb"
     Set db = acc.CurrentDb
 
-    Exec db, "CREATE TABLE tblAgent (AgentCode TEXT(20) CONSTRAINT pkAgent PRIMARY KEY, AgentName TEXT(100), " & _
-             "AppointDate DATETIME, WorkModel TEXT(2), TerminateDate DATETIME, Title TEXT(20), AgentStatus TEXT(20))"
     Exec db, "CREATE TABLE tblHoliday (HolidayDate DATETIME CONSTRAINT pkHoliday PRIMARY KEY, Description TEXT(100))"
     Exec db, "CREATE TABLE tblFA_Input (Period TEXT(6) NOT NULL, Ky INTEGER NOT NULL, AgentCode TEXT(20) NOT NULL, " & _
              "ActualDays DOUBLE, FYC CURRENCY, Contracts DOUBLE, Recruits INTEGER, K2Pct DOUBLE, " & _
@@ -141,7 +139,7 @@ Sub BuildBackEnd()
     Next
 
     acc.CloseCurrentDatabase
-    Check "Đóng FA_Data.accdb"
+    Check "Đóng Data.accdb"
 End Sub
 
 ' =====================================================================
@@ -154,7 +152,8 @@ Sub BuildFrontEnd()
     Check "Tạo FA_App.accdb"
     Set db = acc.CurrentDb
 
-    For Each t In Array("tblAgent", "tblHoliday", "tblFA_Input", "tblFA_Result", "tblPeriodStatus", _
+    ' Lien ket tam cac bang FA; FaAfterUpdate chuyen chung ve file nay, Data.accdb chi con Tbl_Agent + Tbl_Attendance
+    For Each t In Array("tblHoliday", "tblFA_Input", "tblFA_Result", "tblPeriodStatus", _
                         "tblParam", "tblParam_Allowance", "tblParam_K2", "tblParam_Contract")
         acc.DoCmd.TransferDatabase acLink, "Microsoft Access", beFile, acTable, t, t
         Check "Liên kết bảng " & t
@@ -200,26 +199,13 @@ Sub BuildFrontEnd()
         Array("E_LockNotCalc", "Chỉ chốt được kỳ đã tính xong."), _
         Array("Q_Lock", "Sau khi chốt sẽ không tính lại hay nhập đè được. Chốt kỳ"), _
         Array("S_Locked", "Đã chốt kỳ"), _
-        Array("D_PickData", "Chọn file dữ liệu FA_Data.accdb"), _
+        Array("D_PickData", "Chọn file dữ liệu Data.accdb"), _
         Array("S_Relinked", "Đã kết nối lại bảng:"), _
         Array("E_Relink", "Lỗi khi kết nối file dữ liệu."))
         Exec db, "INSERT INTO tblText VALUES (" & Q(r(0)) & ", " & Q(r(1)) & ")"
     Next
 
-    db.CreateQueryDef "qryFA_BangKe", _
-        "SELECT r.Period, r.Ky, r.AgentCode, a.AgentName AS [Họ tên], a.Title AS [Chức danh], a.WorkModel AS [Mô hình], " & _
-        "r.WorkMonthNo AS [Tháng làm việc thứ], r.WorkDaysBase AS [Số ngày làm việc của tháng], " & _
-        "r.ActualDays AS [Số ngày đi làm thực tế], r.AttendancePct AS [Tỷ lệ chấm công], " & _
-        "r.DayFactor AS [Hệ số ngày làm việc], r.FYC AS [FYC phát sinh], r.Contracts AS [Số HĐ phát sinh], " & _
-        "r.Recruits AS [Số LP giới thiệu], r.AllowancePerDay AS [Phụ cấp mỗi ngày], r.K2Pct AS [K2], " & _
-        "r.K2Coef AS [Hệ số K2], r.MDRTCoef AS [Hệ số MDRT], r.ContractCoef AS [Hệ số hợp đồng], " & _
-        "r.FA_Formula AS [FA theo công thức], r.NewGuar AS [Bảo đảm LP mới], " & _
-        "r.NewGuarPending AS [Bảo đảm LP mới đang chờ], r.NewGuarRetro AS [Bù bảo đảm tháng 1], " & _
-        "r.FA_Month AS [FA tháng], r.QtrGuarFlag AS [Được bảo đảm quý], r.QtrGuarMonth AS [Mức bảo đảm quý của tháng], " & _
-        "r.QtrGuarTopup AS [Bù bảo đảm quý], r.FA_Total AS [Tổng FA lũy kế], r.PaidPrevKy AS [Đã chi các kỳ trước], " & _
-        "r.Payable AS [Chi kỳ này], r.Eligible AS [Đủ điều kiện], r.Reason AS [Ghi chú], " & _
-        "r.CalcAt AS [Thời điểm tính], r.CalcBy AS [Người tính] " & _
-        "FROM tblFA_Result AS r LEFT JOIN tblAgent AS a ON r.AgentCode = a.AgentCode"
+    db.CreateQueryDef "qryFA_BangKe", "SELECT * FROM tblFA_Result"
     Check "Tạo query qryFA_BangKe"
 
     acc.LoadFromText acModule, "modFA", modFile

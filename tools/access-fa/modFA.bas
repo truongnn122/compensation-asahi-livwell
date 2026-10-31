@@ -1576,7 +1576,7 @@ Public Function BtnParams()
     DoCmd.OpenTable "tblParam_Contract"
 End Function
 
-' Chon lai file Data (FA_Data.accdb) khi chuyen len thu muc chung
+' Chon lai file Data (Data.accdb) khi chuyen len thu muc chung
 Public Function BtnRelink()
     Dim path As String, td As DAO.TableDef, db As DAO.Database, n As Long
     On Error GoTo Fail

@@ -6,7 +6,7 @@ Căn cứ: Thông báo **ALL/AD/2210-005** (22/10/2026), Phụ lục 1 mục **A
 
 | File Access | Chứa | Ai dùng |
 |---|---|---|
-| **Data chung** (`FA_Data.accdb`, nên đổi tên `Data_Chung.accdb`) | Chỉ 2 bảng: `Tbl_Agent` (98 cột, nhiều tháng, khóa `Period` + `AGENT_CODE`) và `Tbl_Attendance` (chấm công từng ngày). Sau này thêm bảng doanh số | Mọi khoản thưởng đọc chung |
+| **Data chung** (`Data.accdb`) | Chỉ 2 bảng: `Tbl_Agent` (98 cột, nhiều tháng, khóa `Period` + `AGENT_CODE`) và `Tbl_Attendance` (chấm công từng ngày). Sau này thêm bảng doanh số | Mọi khoản thưởng đọc chung |
 | **Mỗi khoản thưởng 1 file** (`FA_App.accdb`, …) | Tham số chính sách, ngày lễ, số liệu nhập tay, **bảng kết quả** `tblFA_Result`, trạng thái chốt kỳ | Riêng khoản đó |
 | **Tổng hợp** (làm sau) | Liên kết bảng kết quả của các khoản thưởng → tổng thu nhập | |
 
@@ -29,10 +29,10 @@ Căn cứ: Thông báo **ALL/AD/2210-005** (22/10/2026), Phụ lục 1 mục **A
 1. Chép `Build_FA_Tool.vbs`, `modFA.bas` và `modUpdate.bas` vào cùng một thư mục.
 2. Double-click `Build_FA_Tool.vbs`. Chờ khoảng 30 giây đến khi hiện thông báo "Hoàn tất".
 3. Script tạo ra 2 file:
-   - `FA_Data.accdb`: chứa dữ liệu, tham số và kết quả. Nếu nhiều người dùng chung, đặt file này ở thư mục mạng.
-   - `FA_App.accdb`: giao diện. Mỗi người giữ 1 bản trên máy mình.
+   - `Data.accdb`: dữ liệu dùng chung (Tbl_Agent, Tbl_Attendance). Nếu nhiều người dùng chung, đặt file này ở thư mục mạng.
+   - `FA_App.accdb`: tool FA kèm dữ liệu riêng của FA (tham số, kết quả, chốt kỳ). Không chép đè bằng bản mới; nâng cấp bằng nút **Cập nhật tool**.
 4. Mở `FA_App.accdb` và bấm **Enable Content**. Nên thêm thư mục vào *File > Options > Trust Center > Trusted Locations* để lần sau không phải bấm lại.
-5. Nếu đã chuyển `FA_Data.accdb` sang thư mục khác: bấm **Kết nối file dữ liệu** rồi chọn lại file.
+5. Nếu đã chuyển `Data.accdb` sang thư mục khác: bấm **Kết nối file dữ liệu** rồi chọn lại file.
 
 ## 3. Cập nhật tool và sao lưu
 
@@ -43,7 +43,7 @@ Căn cứ: Thông báo **ALL/AD/2210-005** (22/10/2026), Phụ lục 1 mục **A
 
 Code nằm trong `FA_App.accdb`, dữ liệu nằm trong `FA_Data.accdb`, nên cập nhật code không động tới dữ liệu.
 
-**Tự sao lưu:** trước mỗi lần *nhập Excel*, *chốt kỳ* và *cập nhật tool*, tool chép `FA_Data.accdb` vào thư mục `Backup` nằm cạnh file dữ liệu. Tên bản sao có ngày giờ, ví dụ `FA_Data_20261031_143000.accdb`. Muốn lấy lại một bản: đóng tool, chép bản backup đè lên `FA_Data.accdb`.
+**Tự sao lưu:** trước mỗi lần *nhập Excel*, *chốt kỳ* và *cập nhật tool*, tool chép cả `Data.accdb` và `FA_App.accdb` vào thư mục `Backup` nằm cạnh file Data. Tên bản sao có ngày giờ. Muốn lấy lại một bản: đóng tool, chép bản backup đè lên file tương ứng.
 
 **Bản đã cài trước ngày 31/10/2026 (cài thêm 1 lần):**
 1. Alt+F11 → **File → Import File…** → chọn `modUpdate.bas`.
