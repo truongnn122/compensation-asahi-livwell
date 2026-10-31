@@ -45,6 +45,7 @@ Code nằm trong `FA_App.accdb`, dữ liệu nằm trong `FA_Data.accdb`, nên c
   - `tblAgent` được cập nhật thành thông tin **mới nhất**: agent mới được thêm vào, agent đã có được cập nhật.
   - `tblAgentHist` lưu **bản chụp riêng của từng tháng** theo `Period`. Nạp lại cùng một tháng thì chỉ ghi đè tháng đó.
 - Tính FA tháng nào thì tool dùng chức danh, ngày bổ nhiệm và FT/PT **của đúng tháng đó** trong `tblAgentHist`. Nếu chưa nạp file của tháng đó thì dùng bản mới nhất.
+- Bảng `tblAgent` và `tblAgentHist` dùng **đúng tên cột và thứ tự của file Excel** (`Period`, `Channel`, …, `AGENT_CODE`, `FULL_NAME`, `TITLE (Code)`…). Bảng dựng từ bản cũ sẽ tự chuyển sang cấu trúc này khi cập nhật, không mất dữ liệu.
 - Cột trùng tên trong file được đặt tên riêng:
   - `INDIRECT 2_NAME` lần thứ nhất → `INDIRECT 2_CODE`;
   - `CHANNEL` → `CHANNEL (2)`;

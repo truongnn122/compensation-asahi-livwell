@@ -13,7 +13,7 @@ Private Declare PtrSafe Function MessageBoxW Lib "user32" (ByVal hWnd As LongPtr
 Private Declare Function MessageBoxW Lib "user32" (ByVal hWnd As Long, ByVal lpText As Long, ByVal lpCaption As Long, ByVal uType As Long) As Long
 #End If
 
-Private Const FA_VERSION As String = "2026.10.31-4"
+Private Const FA_VERSION As String = "2026.10.31-5"
 Private Const FORM_MAIN As String = "frmMain"
 Private Const LOCK_TIMEOUT_MIN As Long = 30
 Private Const FA_TITLES As String = ",LP,"    ' Chuc danh duoc nhan FA (Muc A.II: LP toan thoi gian)
@@ -96,20 +96,6 @@ Private Function BackEndPath() As String
     c = CurrentDb.TableDefs("tblAgent").Connect
     BackEndPath = Mid$(c, InStr(1, c, "DATABASE=", vbTextCompare) + 9)
 End Function
-
-' Bo sung cot Title, AgentStatus cho file FA_Data da dung truoc phien ban nay
-Private Sub EnsureAgentColumns()
-    Dim be As DAO.Database, f As DAO.Field, hasTitle As Boolean, hasStatus As Boolean
-    Set be = DBEngine.OpenDatabase(BackEndPath())
-    For Each f In be.TableDefs("tblAgent").Fields
-        If f.Name = "Title" Then hasTitle = True
-        If f.Name = "AgentStatus" Then hasStatus = True
-    Next f
-    If Not hasTitle Then be.Execute "ALTER TABLE tblAgent ADD COLUMN Title TEXT(20)", dbFailOnError
-    If Not hasStatus Then be.Execute "ALTER TABLE tblAgent ADD COLUMN AgentStatus TEXT(20)", dbFailOnError
-    be.Close
-    If Not (hasTitle And hasStatus) Then CurrentDb.TableDefs("tblAgent").RefreshLink
-End Sub
 
 Private Function MsgU(ByVal text As String, Optional ByVal flags As Long = MB_ICONINFO) As Long
     MsgU = MessageBoxW(Application.hWndAccessApp, StrPtr(text), StrPtr(T("AppTitle")), flags)
@@ -410,12 +396,12 @@ Public Function RunFA(ByVal period As String, ByVal ky As Long) As Boolean
     db.Execute "DELETE FROM tblFA_Result WHERE Period=" & Q(period) & " AND Ky=" & ky, dbFailOnError
 
     Set rsIn = db.OpenRecordset( _
-        "SELECT i.*, IIf(h.AgentCode Is Null, a.AppointDate, h.AppointDate) AS AppointDate, " & _
-        "IIf(h.AgentCode Is Null, a.WorkModel, h.WorkModel) AS WorkModel, " & _
-        "IIf(h.AgentCode Is Null, a.TerminateDate, h.TerminateDate) AS TerminateDate, " & _
-        "IIf(h.AgentCode Is Null, a.Title, h.Title) AS Title " & _
-        "FROM (tblFA_Input AS i LEFT JOIN tblAgent AS a ON i.AgentCode = a.AgentCode) " & _
-        "LEFT JOIN (SELECT * FROM tblAgentHist WHERE SNAPSHOT_PERIOD=" & Q(period) & ") AS h ON i.AgentCode = h.AgentCode " & _
+        "SELECT i.*, IIf(h.[AGENT_CODE] Is Null, a.[APPOINTMENT_DATE], h.[APPOINTMENT_DATE]) AS AppointDate, " & _
+        "IIf(h.[AGENT_CODE] Is Null, a.[AGENCY_TYPE], h.[AGENCY_TYPE]) AS WorkModel, " & _
+        "IIf(h.[AGENT_CODE] Is Null, a.[TERMINATION_DATE], h.[TERMINATION_DATE]) AS TerminateDate, " & _
+        "IIf(h.[AGENT_CODE] Is Null, a.[TITLE (Code)], h.[TITLE (Code)]) AS Title " & _
+        "FROM (tblFA_Input AS i LEFT JOIN tblAgent AS a ON i.AgentCode = a.[AGENT_CODE]) " & _
+        "LEFT JOIN (SELECT * FROM tblAgentHist WHERE [Period]=" & Q(period) & ") AS h ON i.AgentCode = h.[AGENT_CODE] " & _
         "WHERE i.Period=" & Q(period) & " AND i.Ky=" & ky & " ORDER BY i.AgentCode", dbOpenSnapshot)
     Set rsOut = db.OpenRecordset("tblFA_Result", dbOpenDynaset, dbAppendOnly)
 
@@ -726,56 +712,81 @@ End Function
 
 ' Them cac cot cua file he thong vao tblAgent (file FA_Data). Chay lai nhieu lan khong sao.
 Private Sub EnsureAgentSchema()
-    Dim be As DAO.Database, have As Object, f As DAO.Field, spec As Variant, p As Variant, i As Long, added As Boolean
-    EnsureAgentColumns
+    Dim be As DAO.Database
     Set be = DBEngine.OpenDatabase(BackEndPath())
-    Set have = NewDict()
-    For Each f In be.TableDefs("tblAgent").Fields
-        have(UCase$(f.Name)) = True
-    Next f
-    spec = AgentSpec()
-    For i = 0 To UBound(spec)
-        p = Split(spec(i), "|")
-        If Left$(p(3), 1) <> "C" And Not have.Exists(UCase$(p(2))) Then
-            If p(3) = "D" Then
-                be.Execute "ALTER TABLE tblAgent ADD COLUMN [" & p(2) & "] DATETIME", dbFailOnError
-            Else
-                be.Execute "ALTER TABLE tblAgent ADD COLUMN [" & p(2) & "] TEXT(255)", dbFailOnError
-            End If
-            added = True
-        End If
-    Next i
-    be.TableDefs.Refresh
-    EnsureHistTable be
+    MigrateAgentTable be, "tblAgent", "[AGENT_CODE]", "pkAgentV2"
+    MigrateAgentTable be, "tblAgentHist", "[Period], [AGENT_CODE]", "pkAgentHistV2"
     be.Close
-    If added Then CurrentDb.TableDefs("tblAgent").RefreshLink
+    CurrentDb.TableDefs("tblAgent").RefreshLink
     LinkTable "tblAgentHist"
 End Sub
 
-' tblAgentHist: ban chup danh sach agent theo tung thang (SNAPSHOT_PERIOD), cung cau truc voi tblAgent
-Private Sub EnsureHistTable(ByVal be As DAO.Database)
-    Dim td As DAO.TableDef, f As DAO.Field, have As Object, exists As Boolean
-    For Each td In be.TableDefs
-        If td.Name = "tblAgentHist" Then exists = True
+Private Function TableExists(ByVal db As DAO.Database, ByVal name As String) As Boolean
+    Dim td As DAO.TableDef
+    For Each td In db.TableDefs
+        If td.Name = name Then TableExists = True
     Next td
-    If Not exists Then
-        be.Execute "SELECT * INTO tblAgentHist FROM tblAgent WHERE 1=0", dbFailOnError
-        be.Execute "CREATE INDEX pkAgentHist ON tblAgentHist (SNAPSHOT_PERIOD, AgentCode) WITH PRIMARY", dbFailOnError
-        Exit Sub
+End Function
+
+Private Function HasField(ByVal td As DAO.TableDef, ByVal name As String) As Boolean
+    Dim f As DAO.Field
+    For Each f In td.Fields
+        If StrComp(f.Name, name, vbTextCompare) = 0 Then HasField = True
+    Next f
+End Function
+
+Private Function FieldDDL(ByVal p As Variant) As String
+    If p(4) = "AGENT_CODE" Then
+        FieldDDL = "[AGENT_CODE] TEXT(20) NOT NULL"
+    ElseIf p(3) = "D" Or p(3) = "CD" Then
+        FieldDDL = "[" & p(4) & "] DATETIME"
+    Else
+        FieldDDL = "[" & p(4) & "] TEXT(255)"
     End If
-    Set have = NewDict()
-    For Each f In be.TableDefs("tblAgentHist").Fields
-        have(UCase$(f.Name)) = True
-    Next f
-    For Each f In be.TableDefs("tblAgent").Fields
-        If Not have.Exists(UCase$(f.Name)) Then
-            If f.Type = dbDate Then
-                be.Execute "ALTER TABLE tblAgentHist ADD COLUMN [" & f.Name & "] DATETIME", dbFailOnError
-            Else
-                be.Execute "ALTER TABLE tblAgentHist ADD COLUMN [" & f.Name & "] TEXT(255)", dbFailOnError
-            End If
+End Function
+
+' Dua bang agent ve dung ten cot va thu tu cua file Tbl_Agent.xlsx.
+' Bang cau truc cu (AgentCode, AgentName...) duoc tao lai va chep du lieu sang; bang moi chi bo sung cot thieu.
+Private Sub MigrateAgentTable(ByVal be As DAO.Database, ByVal tbl As String, ByVal pkCols As String, ByVal pkName As String)
+    Dim spec As Variant, p As Variant, i As Long, ddl As String, cols As String, src As String, td As DAO.TableDef
+    spec = AgentSpec()
+    If TableExists(be, tbl) Then
+        Set td = be.TableDefs(tbl)
+        If HasField(td, "AGENT_CODE") Then
+            For i = 0 To UBound(spec)
+                p = Split(spec(i), "|")
+                If Not HasField(td, p(4)) Then be.Execute "ALTER TABLE [" & tbl & "] ADD COLUMN " & FieldDDL(p), dbFailOnError
+            Next i
+            Exit Sub
         End If
-    Next f
+    End If
+
+    If TableExists(be, tbl & "_new") Then be.Execute "DROP TABLE [" & tbl & "_new]", dbFailOnError
+    For i = 0 To UBound(spec)
+        p = Split(spec(i), "|")
+        ddl = ddl & IIf(i = 0, "", ", ") & FieldDDL(p)
+    Next i
+    be.Execute "CREATE TABLE [" & tbl & "_new] (" & ddl & ", CONSTRAINT " & pkName & " PRIMARY KEY (" & pkCols & "))", dbFailOnError
+
+    If TableExists(be, tbl) Then
+        For i = 0 To UBound(spec)
+            p = Split(spec(i), "|")
+            If HasField(td, p(2)) Then
+                cols = cols & ", [" & p(4) & "]"
+                src = src & ", [" & p(2) & "]"
+            End If
+        Next i
+        If tbl = "tblAgentHist" Then
+            be.Execute "INSERT INTO [" & tbl & "_new] (" & Mid$(cols, 3) & ") SELECT " & Mid$(src, 3) & _
+                       " FROM [" & tbl & "] WHERE [SNAPSHOT_PERIOD] Is Not Null", dbFailOnError
+        Else
+            be.Execute "INSERT INTO [" & tbl & "_new] (" & Mid$(cols, 3) & ") SELECT " & Mid$(src, 3) & " FROM [" & tbl & "]", dbFailOnError
+        End If
+        Set td = Nothing
+        be.Execute "DROP TABLE [" & tbl & "]", dbFailOnError
+    End If
+    be.TableDefs.Refresh
+    be.TableDefs(tbl & "_new").Name = tbl
 End Sub
 
 Private Sub LinkTable(ByVal name As String)
@@ -795,12 +806,58 @@ Private Sub BuildAgentQuery()
     spec = AgentSpec()
     For i = 0 To UBound(spec)
         p = Split(spec(i), "|")
-        sql = sql & IIf(i = 0, "", ", ") & "[" & p(2) & "] AS [" & p(4) & "]"
+        sql = sql & IIf(i = 0, "", ", ") & "[" & p(4) & "]"
     Next i
     On Error Resume Next
     CurrentDb.QueryDefs.Delete "qryAgent"
     On Error GoTo 0
-    CurrentDb.CreateQueryDef "qryAgent", "SELECT " & sql & " FROM tblAgent ORDER BY AgentCode"
+    CurrentDb.CreateQueryDef "qryAgent", "SELECT " & sql & " FROM tblAgent ORDER BY [AGENT_CODE]"
+    BuildBangKeQuery
+End Sub
+
+' Bang ke FA (ten cot tieng Viet), noi voi tblAgent theo ten cot moi
+Private Sub BuildBangKeQuery()
+    Dim s As String
+    s = "SELECT "
+    s = s & U("r.Period")
+    s = s & U(", r.Ky")
+    s = s & U(", r.AgentCode")
+    s = s & U(", a.[FULL_NAME] AS [H\u1ECD t\u00EAn]")
+    s = s & U(", a.[TITLE (Code)] AS [Ch\u1EE9c danh]")
+    s = s & U(", a.[AGENCY_TYPE] AS [M\u00F4 h\u00ECnh]")
+    s = s & U(", r.WorkMonthNo AS [Th\u00E1ng l\u00E0m vi\u1EC7c th\u1EE9]")
+    s = s & U(", r.WorkDaysBase AS [S\u1ED1 ng\u00E0y l\u00E0m vi\u1EC7c c\u1EE7a th\u00E1ng]")
+    s = s & U(", r.ActualDays AS [S\u1ED1 ng\u00E0y \u0111i l\u00E0m th\u1EF1c t\u1EBF]")
+    s = s & U(", r.AttendancePct AS [T\u1EF7 l\u1EC7 ch\u1EA5m c\u00F4ng]")
+    s = s & U(", r.DayFactor AS [H\u1EC7 s\u1ED1 ng\u00E0y l\u00E0m vi\u1EC7c]")
+    s = s & U(", r.FYC AS [FYC ph\u00E1t sinh]")
+    s = s & U(", r.Contracts AS [S\u1ED1 H\u0110 ph\u00E1t sinh]")
+    s = s & U(", r.Recruits AS [S\u1ED1 LP gi\u1EDBi thi\u1EC7u]")
+    s = s & U(", r.AllowancePerDay AS [Ph\u1EE5 c\u1EA5p m\u1ED7i ng\u00E0y]")
+    s = s & U(", r.K2Pct AS [K2]")
+    s = s & U(", r.K2Coef AS [H\u1EC7 s\u1ED1 K2]")
+    s = s & U(", r.MDRTCoef AS [H\u1EC7 s\u1ED1 MDRT]")
+    s = s & U(", r.ContractCoef AS [H\u1EC7 s\u1ED1 h\u1EE3p \u0111\u1ED3ng]")
+    s = s & U(", r.FA_Formula AS [FA theo c\u00F4ng th\u1EE9c]")
+    s = s & U(", r.NewGuar AS [B\u1EA3o \u0111\u1EA3m LP m\u1EDBi]")
+    s = s & U(", r.NewGuarPending AS [B\u1EA3o \u0111\u1EA3m LP m\u1EDBi \u0111ang ch\u1EDD]")
+    s = s & U(", r.NewGuarRetro AS [B\u00F9 b\u1EA3o \u0111\u1EA3m th\u00E1ng 1]")
+    s = s & U(", r.FA_Month AS [FA th\u00E1ng]")
+    s = s & U(", r.QtrGuarFlag AS [\u0110\u01B0\u1EE3c b\u1EA3o \u0111\u1EA3m qu\u00FD]")
+    s = s & U(", r.QtrGuarMonth AS [M\u1EE9c b\u1EA3o \u0111\u1EA3m qu\u00FD c\u1EE7a th\u00E1ng]")
+    s = s & U(", r.QtrGuarTopup AS [B\u00F9 b\u1EA3o \u0111\u1EA3m qu\u00FD]")
+    s = s & U(", r.FA_Total AS [T\u1ED5ng FA l\u0169y k\u1EBF]")
+    s = s & U(", r.PaidPrevKy AS [\u0110\u00E3 chi c\u00E1c k\u1EF3 tr\u01B0\u1EDBc]")
+    s = s & U(", r.Payable AS [Chi k\u1EF3 n\u00E0y]")
+    s = s & U(", r.Eligible AS [\u0110\u1EE7 \u0111i\u1EC1u ki\u1EC7n]")
+    s = s & U(", r.Reason AS [Ghi ch\u00FA]")
+    s = s & U(", r.CalcAt AS [Th\u1EDDi \u0111i\u1EC3m t\u00EDnh]")
+    s = s & U(", r.CalcBy AS [Ng\u01B0\u1EDDi t\u00EDnh]")
+    s = s & " FROM tblFA_Result AS r LEFT JOIN tblAgent AS a ON r.AgentCode = a.[AGENT_CODE]"
+    On Error Resume Next
+    CurrentDb.QueryDefs.Delete "qryFA_BangKe"
+    On Error GoTo 0
+    CurrentDb.CreateQueryDef "qryFA_BangKe", s
 End Sub
 
 Private Function FormExists(ByVal name As String) As Boolean
@@ -854,7 +911,7 @@ Private Sub BuildAgentForms()
         Set lb = CreateControl(fn, acLabel, acDetail, c.Name, , 100, 300 * i, 1800, 280)
         lb.Name = "l" & i
         lb.Caption = p(4)
-        If p(2) = "AgentName" Or p(3) = "T" And InStr(p(2), "NAME") > 0 Then c.ColumnWidth = 2800 Else c.ColumnWidth = 1700
+        If p(3) <> "D" And p(3) <> "CD" And InStr(UCase$(p(4)), "NAME") > 0 Then c.ColumnWidth = 2800 Else c.ColumnWidth = 1700
     Next i
     SaveNewForm f, "frmAgentList"
 
@@ -877,7 +934,7 @@ Private Sub BuildAgentForms()
     c.Caption = U("Ch\u1EE9c danh")
     Set c = AddCtl(fn, acComboBox, "cboTitle", 6700, 200, 1300, 320)
     c.RowSourceType = "Table/Query"
-    c.RowSource = "SELECT DISTINCT Title FROM tblAgent WHERE Title Is Not Null ORDER BY Title"
+    c.RowSource = "SELECT DISTINCT [TITLE (Code)] FROM tblAgent WHERE [TITLE (Code)] Is Not Null ORDER BY [TITLE (Code)]"
     c.AfterUpdate = "=AgentFilter()"
     Set c = AddCtl(fn, acCommandButton, "btnClear", 8200, 180, 1300, 380)
     c.Caption = U("B\u1ECF l\u1ECDc")
@@ -1007,15 +1064,14 @@ Private Function FindCol(ByVal hdr As Object, ParamArray names() As Variant) As 
     Next n
 End Function
 
-' Doc sheet Agent theo ten cot, chap nhan ca file mau cua tool (AgentCode, AgentName...)
+' Doc sheet Agent theo ten cot: file xuat he thong 98 cot (chuan) hoac mau 5 cot cu (AgentCode, AgentName...)
 ' lan file xuat tu he thong (AGENT_CODE, FULL_NAME, APPOINTMENT_DATE, AGENCY_TYPE, TITLE (Code)...).
 ' Ten cot duoc so khop sau khi bo khoang trang va dau gach duoi.
 Private Function ImportAgents(ByVal path As String, ByRef nAgents As Long) As Boolean
-    Dim xl As Object, wb As Object, ws As Object, data As Variant, hdr As Object
-    Dim cCode As Long, cName As Long, cAppoint As Long, cModel As Long, cTerm As Long, cTitle As Long, cStatus As Long
-    Dim r As Long, c As Long, key As String, code As String, rs As DAO.Recordset
-    Dim seen As Object, spec As Variant, p As Variant, extraCol() As Long
-    Dim cPeriod As Long, periods As Object, pk As Variant
+    Dim xl As Object, wb As Object, ws As Object, data As Variant, hdr As Object, seen As Object
+    Dim spec As Variant, p As Variant, col() As Long, r As Long, c As Long, key As String, code As String, v As String
+    Dim cCode As Long, cAppoint As Long, cModel As Long, cPeriod As Long
+    Dim rs As DAO.Recordset, periods As Object, pk As Variant
 
     On Error GoTo Fail
     Set xl = CreateObject("Excel.Application")
@@ -1028,6 +1084,7 @@ Private Function ImportAgents(ByVal path As String, ByRef nAgents As Long) As Bo
     data = ws.UsedRange.Value
     If Not IsArray(data) Then GoTo Done
 
+    ' Tieu de -> vi tri cot; cot trung ten duoc danh so theo lan xuat hien (#1, #2)
     Set hdr = NewDict()
     Set seen = NewDict()
     For c = 1 To UBound(data, 2)
@@ -1037,58 +1094,55 @@ Private Function ImportAgents(ByVal path As String, ByRef nAgents As Long) As Bo
             hdr(key & "#" & seen(key)) = c
         End If
     Next c
-    cCode = FindCol(hdr, "AGENTCODE")
-    cName = FindCol(hdr, "AGENTNAME", "FULLNAME")
-    cAppoint = FindCol(hdr, "APPOINTDATE", "APPOINTMENTDATE")
-    cModel = FindCol(hdr, "WORKMODEL", "AGENCYTYPE")
-    cTerm = FindCol(hdr, "TERMINATEDATE", "TERMINATIONDATE")
-    cTitle = FindCol(hdr, "TITLE", "TITLE(CODE)")
-    cStatus = FindCol(hdr, "AGENTSTATUS")
-    cPeriod = FindCol(hdr, "PERIOD")
-    Set periods = NewDict()
-    If cCode = 0 Or cAppoint = 0 Or cModel = 0 Then Err.Raise vbObjectError + 10, , T("E_AgentCols")
 
-    ' Cac cot con lai cua file he thong (CCCD, ngan hang, tuyen quan ly...)
     spec = AgentSpec()
-    ReDim extraCol(UBound(spec))
+    ReDim col(UBound(spec))
     For c = 0 To UBound(spec)
         p = Split(spec(c), "|")
-        If Left$(p(3), 1) <> "C" Then
-            key = NormHeader(p(0)) & "#" & p(1)
-            If hdr.Exists(key) Then
-                extraCol(c) = hdr(key)
-            ElseIf hdr.Exists(NormHeader(p(4)) & "#1") Then
-                extraCol(c) = hdr(NormHeader(p(4)) & "#1")
-            End If
+        key = NormHeader(p(0)) & "#" & p(1)
+        If hdr.Exists(key) Then
+            col(c) = hdr(key)
+        ElseIf hdr.Exists(NormHeader(p(4)) & "#1") Then
+            col(c) = hdr(NormHeader(p(4)) & "#1")
+        Else
+            col(c) = FindCol(hdr, OldTemplateHeader(p(4)))
         End If
+        Select Case p(4)
+            Case "AGENT_CODE": cCode = col(c)
+            Case "APPOINTMENT_DATE": cAppoint = col(c)
+            Case "AGENCY_TYPE": cModel = col(c)
+            Case "Period": cPeriod = col(c)
+        End Select
     Next c
+    If cCode = 0 Or cAppoint = 0 Or cModel = 0 Then Err.Raise vbObjectError + 10, , T("E_AgentCols")
 
+    Set periods = NewDict()
     Set rs = CurrentDb.OpenRecordset("tblAgent", dbOpenDynaset)
     For r = 2 To UBound(data, 1)
         code = Trim$(CellText(data(r, cCode)))
         If Len(code) > 0 Then
-            rs.FindFirst "AgentCode=" & Q(code)
+            rs.FindFirst "[AGENT_CODE]=" & Q(code)
             If rs.NoMatch Then
                 rs.AddNew
-                rs!AgentCode = code
+                rs.Fields("AGENT_CODE") = code
             Else
                 rs.Edit
             End If
-            If cName > 0 Then rs!AgentName = Left$(Trim$(CellText(data(r, cName))), 100)
-            rs!AppointDate = ToDateOrNull(data(r, cAppoint))
-            rs!WorkModel = Left$(UCase$(Trim$(CellText(data(r, cModel)))), 2)
-            If cTerm > 0 Then rs!TerminateDate = ToDateOrNull(data(r, cTerm))
-            If cTitle > 0 Then rs!Title = Left$(UCase$(Trim$(CellText(data(r, cTitle)))), 20)
-            If cStatus > 0 Then rs!AgentStatus = Left$(Trim$(CellText(data(r, cStatus))), 20)
             For c = 0 To UBound(spec)
-                If extraCol(c) > 0 Then
+                If col(c) > 0 Then
                     p = Split(spec(c), "|")
-                    If p(3) = "D" Then
-                        rs.Fields(p(2)) = ToDateOrNull(data(r, extraCol(c)))
-                    ElseIf Len(Trim$(CellText(data(r, extraCol(c))))) = 0 Then
-                        rs.Fields(p(2)) = Null
+                    If p(4) = "AGENT_CODE" Then
+                        ' khoa chinh, da gan
+                    ElseIf p(3) = "D" Or p(3) = "CD" Then
+                        rs.Fields(p(4)) = ToDateOrNull(data(r, col(c)))
                     Else
-                        rs.Fields(p(2)) = Left$(Trim$(CellText(data(r, extraCol(c)))), 255)
+                        v = Trim$(CellText(data(r, col(c))))
+                        If p(4) = "AGENCY_TYPE" Or p(4) = "TITLE (Code)" Then v = UCase$(v)
+                        If Len(v) = 0 Then
+                            rs.Fields(p(4)) = Null
+                        Else
+                            rs.Fields(p(4)) = Left$(v, 255)
+                        End If
                     End If
                 End If
             Next c
@@ -1104,8 +1158,8 @@ Private Function ImportAgents(ByVal path As String, ByRef nAgents As Long) As Bo
 
     ' Luu ban chup tung thang: nap lai cung thang thi ghi de dung thang do
     For Each pk In periods.Keys
-        CurrentDb.Execute "DELETE FROM tblAgentHist WHERE SNAPSHOT_PERIOD=" & Q(CStr(pk)), dbFailOnError
-        CurrentDb.Execute "INSERT INTO tblAgentHist SELECT * FROM tblAgent WHERE SNAPSHOT_PERIOD=" & Q(CStr(pk)), dbFailOnError
+        CurrentDb.Execute "DELETE FROM tblAgentHist WHERE [Period]=" & Q(CStr(pk)), dbFailOnError
+        CurrentDb.Execute "INSERT INTO tblAgentHist SELECT * FROM tblAgent WHERE [Period]=" & Q(CStr(pk)), dbFailOnError
     Next pk
 Done:
     ImportAgents = True
@@ -1117,6 +1171,19 @@ Cleanup:
 Fail:
     mErr = Err.Description
     Resume Cleanup
+End Function
+
+' Ten cot cua mau 5 cot cu (truoc khi dung file he thong)
+Private Function OldTemplateHeader(ByVal field As String) As String
+    Select Case field
+        Case "AGENT_CODE": OldTemplateHeader = "AGENTCODE"
+        Case "FULL_NAME": OldTemplateHeader = "AGENTNAME"
+        Case "APPOINTMENT_DATE": OldTemplateHeader = "APPOINTDATE"
+        Case "AGENCY_TYPE": OldTemplateHeader = "WORKMODEL"
+        Case "TERMINATION_DATE": OldTemplateHeader = "TERMINATEDATE"
+        Case "TITLE (Code)": OldTemplateHeader = "TITLE"
+        Case Else: OldTemplateHeader = "-"
+    End Select
 End Function
 
 Public Function BtnImport()
