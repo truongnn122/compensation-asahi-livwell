@@ -47,3 +47,8 @@ yarn-error.log*
 next-env.d.ts
 .claude/settings.local.json
 service-account.json
+tools/access-fa/*.zip
+tools/access-fa/ket-qua/
+tools/*.zip
+tools/access-fapm/ket-qua/
+tools/**/*.zip
