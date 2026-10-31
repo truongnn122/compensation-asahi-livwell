@@ -15,6 +15,7 @@ from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
 
 # ---- Tham so (khop tblParam trong Build_FA_Tool.vbs) ----
 STD_DAYS = 22
@@ -165,6 +166,10 @@ AGENTS = [
 ]
 TITLES = {"PM001": "PM"}
 
+# Mau chuan sheet Agent = file xuat he thong Tbl_Agent.xlsx (98 cot, giu nguyen ten va thu tu, ke ca cot trung ten)
+AGENT_HEADERS = ["Period", "Channel", "REGION_CODE", "REGION_NAME", "ZONE_CODE", "ZONE_NAME", "BRANCH_CODE", "BRANCH_NAME", "SH_CODE", "SH_NAME", "SD_CODE", "SD_NAME", "INDIRECT 2_NAME", "INDIRECT 2_NAME", "INDIRECT 1_CODE", "INDIRECT 1_NAME", "DIRECT_MANAGER_CODE", "DIRECT_MANAGER_NAME", "LEADER", "EXT_REF", "AGENT_CODE", "FULL_NAME", "GENDER", "TITLE (Code)", "AGENT_STATUS", "DOB", "NATIONAL_ID", "ID_ISSUE_DATE", "ID_ISSUED_BY", "ID_EXPIRATION_DATE", "OLD_ID_NO", "PLACE_OF_BIRTH", "NATIONALITY", "MARITAL_STATUS", "TAX_CODE", "INCOME_RANGE", "EDUCATION", "PUBLIC_SECTOR", "OCCUPATION", "EXPERIENCE (Year)", "PERM_PROVINCE", "PERM_WARD", "PERM_STREET", "CONTACT_PROVINCE", "CONTACT_WARD", "CONTACT_STREET", "MOBILE", "PERSONAL_EMAIL", "COMPANY_EMAIL", "CHANNEL", "AGENCY_TYPE", "FIRST_RECRUITER_CODE", "REFERRER_CODE", "APPOINTMENT_DATE", "TERMINATION_DATE", "FIRST APPOINTMENT_DATE", "PROMOTION_DATE", "DEMOTION_DATE", "BANK_ACCOUNT_HOLDER", "BANK_ACCOUNT_NO", "BANK_CODE", "BANK_BRANCH", "BANK_BRANCH CODE (Payment)", "MOF_CERT_NO", "MOF_CERT_ISSUE_DATE", "MOF_EXAM_PASS_DATE", "AVICAD_STATUS", "AVICAD_DESC", "AVICAD_CHECKED_AT", "CONTRACT_NO Agent", "CONTRACT_TYPE", "CONTRACT_NO Leader", "CONTRACT_TYPE", "ESIGN_ENVELOPE_ID (DOCUMENT ID)", "CONTRACT_SENT_DATE", "CONTRACT_SIGNED_DATE", "SIGN_AUTH_METHOD", "SIGN_STATUS", "CONTRACT_FILE_NAME", "CONTRACT_DMS_REF", "PROGRAM_CODES", "COMMIT_1", "COMMIT_2", "COMMIT_3", "COMMIT_4", "CONSENT_NOTIFY_OPS", "CONSENT_NOTIFY_PROMO", "PDPD_1_BASIC", "PDPD_2_SENSITIVE", "PDPD_3_SHARE", "CONSENT_DATE", "CONSENT_METHOD", "ONBOARD_COURSE_CODE", "ONBOARD_COURSE_DATE", "TRAINING_COMPLETED", "PRODUCT_AUTH_CODES", "DOC_RECEIVED", "DOC_DMS_REF"]
+DATE_HEADERS = {h for h in AGENT_HEADERS if "DATE" in h.upper() or h.upper() == "DOB" or h.upper().endswith("_AT")}
+
 INPUTS = {
     "LP001": dict(ActualDays=20, FYC=26_000_000, Contracts=2, Recruits=0, K2Pct=None, MDRTPrev=0, TrainingDone=1, StatusEOM="Active"),
     "LP002": dict(ActualDays=22, FYC=30_000_000, Contracts=3, Recruits=1, K2Pct=85, MDRTPrev=1, TrainingDone=1, StatusEOM="Active"),
@@ -217,7 +222,7 @@ def build_workbook(path, results):
         for r in rows:
             ws.append(list(r))
         for i, _ in enumerate(cols):
-            ws.column_dimensions[chr(65 + i)].width = (widths or {}).get(i, 16)
+            ws.column_dimensions[get_column_letter(i + 1)].width = (widths or {}).get(i, 16)
         ws.freeze_panes = "A2"
         return ws
 
@@ -228,12 +233,10 @@ def build_workbook(path, results):
         "",
         "Tool chỉ đọc 3 sheet: Agent, Holiday, FA_Input. Không đổi tên sheet và tên cột.",
         "",
-        "Sheet Agent – danh sách LP (nhập 1 lần, cập nhật khi có thay đổi)",
-        "  AgentCode: mã đại lý | AgentName: họ tên | AppointDate: ngày bổ nhiệm (ngày HĐ đại lý hiệu lực)",
-        "  WorkModel: FT = toàn thời gian, PT = bán thời gian | TerminateDate: ngày chấm dứt HĐ (để trống nếu còn hiệu lực)",
-        "  Title: chức danh (LP, PM, PD...). FA chỉ tính cho LP",
-        "  Có thể dán thẳng file xuất hệ thống vào sheet Agent: tool tự nhận cột AGENT_CODE, FULL_NAME, APPOINTMENT_DATE,",
-        "  AGENCY_TYPE, TERMINATION_DATE, TITLE (Code), AGENT_STATUS (các cột khác bỏ qua)",
+        "Sheet Agent – danh sách agent hàng tháng: dán NGUYÊN file xuất hệ thống (Tbl_Agent, 98 cột, giữ đúng tên và thứ tự cột)",
+        "  Cột bắt buộc: Period, AGENT_CODE, FULL_NAME, TITLE (Code), AGENCY_TYPE (FT/PT), APPOINTMENT_DATE",
+        "  TERMINATION_DATE để trống nếu HĐ còn hiệu lực. FA chỉ tính cho chức danh LP",
+        "  Nạp lại cùng Period thì ghi đè đúng tháng đó; các tháng khác giữ nguyên trong lịch sử",
         "",
         "Sheet Holiday – ngày lễ rơi vào ngày làm việc (để tính số ngày làm việc của tháng)",
         "",
@@ -255,14 +258,20 @@ def build_workbook(path, results):
     hd["A1"].font = Font(bold=True, size=13)
     hd.column_dimensions["A"].width = 120
 
-    ws = sheet(
-        "Agent",
-        ["AgentCode", "AgentName", "AppointDate", "WorkModel", "TerminateDate", "Title"],
-        [(c, n, d, m, None, TITLES.get(c, "LP")) for c, n, d, m, _ in AGENTS],
-        {1: 26},
-    )
-    for row in ws.iter_rows(min_row=2, min_col=3, max_col=3):
-        row[0].number_format = "dd/mm/yyyy"
+    def agent_row(code, name, appoint, model):
+        v = {"Period": PERIOD, "Channel": "AGENCY", "AGENT_CODE": code, "FULL_NAME": name,
+             "TITLE (Code)": TITLES.get(code, "LP"), "AGENT_STATUS": "Active", "CHANNEL": "AGENCY",
+             "AGENCY_TYPE": model, "APPOINTMENT_DATE": appoint}
+        return [v.get(h) for h in AGENT_HEADERS]
+
+    ws = sheet("Agent", AGENT_HEADERS, [agent_row(c, n, d, m) for c, n, d, m, _ in AGENTS])
+    for i, h in enumerate(AGENT_HEADERS):
+        if h in DATE_HEADERS:
+            for row in ws.iter_rows(min_row=2, min_col=i + 1, max_col=i + 1):
+                row[0].number_format = "dd/mm/yyyy"
+        if h in ("Period", "AGENT_CODE"):
+            for row in ws.iter_rows(min_row=2, min_col=i + 1, max_col=i + 1):
+                row[0].number_format = "@"
 
     ws = sheet("Holiday", ["HolidayDate", "Description"], HOLIDAYS.items(), {1: 30})
     for row in ws.iter_rows(min_row=2, max_col=1):
