@@ -156,6 +156,8 @@ def main(path, period, ky, out, att_path=None):
     if att is not None:
         print(f"== BUOC 2b: Cham cong thang {period}: {len(att)} agent, bo {dup} dong trung ==")
         for code, a in agents.items():
+            if a["Title"] not in ("", "LP"):
+                continue
             inp = inputs.setdefault(code, dict(FYC=0, Contracts=0, Recruits=0, K2Pct=None, MDRTPrev=False,
                                                TrainingDone=a.get("Training", False), StatusEOM=a["Status"]))
             inp["ActualDays"] = att.get(code, 0)

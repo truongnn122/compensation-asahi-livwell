@@ -16,7 +16,7 @@ Private Declare PtrSafe Function MessageBoxW Lib "user32" (ByVal hWnd As LongPtr
 Private Declare Function MessageBoxW Lib "user32" (ByVal hWnd As Long, ByVal lpText As Long, ByVal lpCaption As Long, ByVal uType As Long) As Long
 #End If
 
-Private Const TH_VERSION As String = "2026.11.01-1"
+Private Const TH_VERSION As String = "2026.11.01-2"
 Private Const FORM_TH As String = "frmTongHop"
 Private Const MB_YESNO As Long = 4
 Private Const MB_ICONERROR As Long = 16
@@ -233,15 +233,18 @@ End Sub
 
 ' Chon file khoan thuong. File FA duoc nhan dien tu dong; file khac: dien them cot trong "Danh sach nguon".
 Public Function BtnAddSource()
-    Dim path As String, src As DAO.Database, code As String, rs As DAO.Recordset, isFA As Boolean
+    Dim path As String, src As DAO.Database, code As String, rs As DAO.Recordset, isFA As Boolean, isFAPM As Boolean
     On Error GoTo Fail
     path = PickFile(U("Ch\u1ECDn file Access c\u1EE7a kho\u1EA3n th\u01B0\u1EDFng"))
     If path = "" Then Exit Function
     Set src = DBEngine.OpenDatabase(path, False, True)
     isFA = TableExists(src, "tblFA_Result")
+    isFAPM = TableExists(src, "tblFAPM_Result")
     src.Close
     If isFA Then
         code = "FA"
+    ElseIf isFAPM Then
+        code = "FA_PM"
     Else
         code = UCase$(Trim$(InputBox("Bonus code (VD: TTHANG, TQUY, MDRT):", "Tong hop")))
         If code = "" Then Exit Function
@@ -266,12 +269,21 @@ Public Function BtnAddSource()
         rs!KyField = "Ky"
         rs!AmountField = "Payable"
         rs!StatusTable = "tblPeriodStatus"
+    ElseIf isFAPM Then
+        rs!BonusName = U("Ph\u1EE5 c\u1EA5p c\u1ED1 \u0111\u1ECBnh (FA) \u2013 PM/PD")
+        rs!ResultTable = "tblFAPM_Result"
+        rs!AgentField = "AgentCode"
+        rs!NameField = "AgentName"
+        rs!PeriodField = "Period"
+        rs!KyField = "Ky"
+        rs!AmountField = "Payable"
+        rs!StatusTable = "tblPeriodStatus"
     ElseIf IsNull(rs!BonusName) Then
         rs!BonusName = code
     End If
     rs.Update
     rs.Close
-    If isFA Then
+    If isFA Or isFAPM Then
         MsgU U("\u0110\u00E3 th\u00EAm ngu\u1ED3n FA:") & vbCrLf & path
     Else
         MsgU U("\u0110\u00E3 th\u00EAm ngu\u1ED3n. \u0110i\u1EC1n t\u00EAn b\u1EA3ng k\u1EBFt qu\u1EA3 v\u00E0 t\u00EAn c\u00E1c c\u1ED9t trong b\u1EA3ng ngu\u1ED3n v\u1EEBa m\u1EDF.")

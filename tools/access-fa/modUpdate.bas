@@ -3,8 +3,8 @@ Option Explicit
 
 ' =====================================================================
 ' CAP NHAT TOOL & SAO LUU DU LIEU (file Data chung + file tool)
-' Module nay it thay doi. Moi lan nang cap chi thay modFA.bas:
-'   chep modFA.bas moi vao cung thu muc voi FA_App.accdb -> bam "Cap nhat tool".
+' Dung chung cho moi tool khoan thuong (FA, FA PM...). Moi lan nang cap chi thay file module tinh toan:
+'   chep modFA.bas (hoac modFAPM.bas) moi vao cung thu muc voi file tool -> bam "Cap nhat tool".
 ' Lan dau cai dat: Alt+F11 > File > Import File > modUpdate.bas,
 '   dat con tro trong Sub CaiDatCapNhat va bam F5.
 ' Chu tieng Viet viet dang \uXXXX vi module chi chua ky tu ASCII.
@@ -16,7 +16,7 @@ Private Declare PtrSafe Function MessageBoxW Lib "user32" (ByVal hWnd As LongPtr
 Private Declare Function MessageBoxW Lib "user32" (ByVal hWnd As Long, ByVal lpText As Long, ByVal lpCaption As Long, ByVal uType As Long) As Long
 #End If
 
-Private Const M_UPD_MISSING As String = "Ch\u01B0a c\u00F3 file modFA.bas m\u1EDBi trong th\u01B0 m\u1EE5c:"
+Private Const M_UPD_MISSING As String = "Ch\u01B0a c\u00F3 file code m\u1EDBi (.bas) trong th\u01B0 m\u1EE5c:"
 Private Const M_UPD_CONFIRM As String = "C\u1EADp nh\u1EADt tool t\u1EEB file modFA.bas? D\u1EEF li\u1EC7u s\u1EBD \u0111\u01B0\u1EE3c sao l\u01B0u tr\u01B0\u1EDBc, kh\u00F4ng b\u1ECB thay \u0111\u1ED5i."
 Private Const M_UPD_DONE As String = "\u0110\u00E3 c\u1EADp nh\u1EADt tool l\u00EAn phi\u00EAn b\u1EA3n:"
 Private Const M_UPD_ERR As String = "L\u1ED7i khi c\u1EADp nh\u1EADt tool. D\u1EEF li\u1EC7u kh\u00F4ng b\u1ECB \u1EA3nh h\u01B0\u1EDFng."
@@ -44,6 +44,13 @@ End Function
 
 Private Function Msg(ByVal text As String, Optional ByVal flags As Long = 64) As Long
     Msg = MessageBoxW(Application.hWndAccessApp, StrPtr(text), StrPtr(UX(M_TITLE)), flags)
+End Function
+
+' Ten module tinh toan cua tool nay (modFA, modFAPM...). Tool bao qua ham FaModuleName; mac dinh modFA.
+Private Function ModuleName() As String
+    On Error Resume Next
+    ModuleName = Application.Run("FaModuleName")
+    If Err.Number <> 0 Or Len(ModuleName) = 0 Then ModuleName = "modFA"
 End Function
 
 Private Function DataFilePath() As String
@@ -85,9 +92,10 @@ Public Function BtnBackup()
 End Function
 
 Public Function BtnUpdate()
-    Dim path As String, ver As String
+    Dim path As String, ver As String, modName As String
     On Error GoTo Fail
-    path = CurrentProject.Path & "\modFA.bas"
+    modName = ModuleName()
+    path = CurrentProject.Path & "\" & modName & ".bas"
     If Dir$(path) = "" Then
         ' Khong co file code moi: chi chay lai buoc bo sung bang/form (sua cau truc)
         If BackupData(True) = "" Then Exit Function
@@ -100,7 +108,7 @@ Public Function BtnUpdate()
     If BackupData(True) = "" Then Exit Function
 
     DoCmd.Close acForm, "frmMain"
-    Application.LoadFromText acModule, "modFA", path
+    Application.LoadFromText acModule, modName, path
     RunCommand acCmdCompileAndSaveAllModules
     Name path As path & ".da_cap_nhat_" & Format$(Now(), "yyyymmdd_hhnnss")
 

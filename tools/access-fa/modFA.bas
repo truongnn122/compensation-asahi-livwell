@@ -13,7 +13,7 @@ Private Declare PtrSafe Function MessageBoxW Lib "user32" (ByVal hWnd As LongPtr
 Private Declare Function MessageBoxW Lib "user32" (ByVal hWnd As Long, ByVal lpText As Long, ByVal lpCaption As Long, ByVal uType As Long) As Long
 #End If
 
-Private Const FA_VERSION As String = "2026.11.01-3"
+Private Const FA_VERSION As String = "2026.11.01-5"
 Private Const FORM_MAIN As String = "frmMain"
 Private Const LOCK_TIMEOUT_MIN As Long = 30
 Private Const FA_TITLES As String = ",LP,"    ' Chuc danh duoc nhan FA (Muc A.II: LP toan thoi gian)
@@ -49,6 +49,11 @@ Private mErr As String
 
 Public Function FaVersion() As String
     FaVersion = FA_VERSION
+End Function
+
+' Ten module de nut 'Cap nhat tool' (modUpdate) biet nap file nao
+Public Function FaModuleName() As String
+    FaModuleName = "modFA"
 End Function
 
 ' Sao luu file du lieu truoc thao tac ghi (dung Application.Run de khong phu thuoc modUpdate khi bien dich)
@@ -403,9 +408,10 @@ Public Function RunFA(ByVal period As String, ByVal ky As Long) As Boolean
 
     db.Execute "DELETE FROM tblFA_Result WHERE Period=" & Q(period) & " AND Ky=" & ky, dbFailOnError
 
-    ' Agent: ban chup cua thang tinh, neu chua co thi ban gan nhat truoc do (Data chung)
+    ' Agent: ban chup cua thang tinh, neu chua co thi ban gan nhat truoc do (Data chung); chi lay chuc danh LP
     ' Cham cong: tong so cong trong thang (Data chung). Doanh so/K2/MDRT: tblFA_Input (tam thoi, se thay bang bang Data chung)
-    Dim sqlA As String, sqlT As String, sqlI As String
+    Dim sqlA As String, sqlT As String, sqlI As String, titleList As String
+    titleList = "'" & Replace(Mid$(FA_TITLES, 2, Len(FA_TITLES) - 2), ",", "','") & "'"
     sqlA = "SELECT x.* FROM Tbl_Agent AS x WHERE x.[Period] = (SELECT Max(y.[Period]) FROM Tbl_Agent AS y " & _
            "WHERE y.[AGENT_CODE] = x.[AGENT_CODE] AND y.[Period] <= " & Q(period) & ")"
     sqlT = "SELECT [" & AttCol("CODE") & "] AS TCode, Count(*) AS TRows, " & _
@@ -418,7 +424,9 @@ Public Function RunFA(ByVal period As String, ByVal ky As Long) As Boolean
         "a.[TITLE (Code)] AS Title, a.[AGENT_STATUS] AS AgentStatus, a.[TRAINING_COMPLETED] AS AgentTraining, " & _
         "t.TDays, t.TRows, i.AgentCode AS InCode, i.FYC, i.Contracts, i.Recruits, i.K2Pct, i.MDRTPrev, i.TrainingDone, i.StatusEOM " & _
         "FROM ((" & sqlA & ") AS a LEFT JOIN (" & sqlT & ") AS t ON a.[AGENT_CODE] = t.TCode) " & _
-        "LEFT JOIN (" & sqlI & ") AS i ON a.[AGENT_CODE] = i.AgentCode ORDER BY a.[AGENT_CODE]", dbOpenSnapshot)
+        "LEFT JOIN (" & sqlI & ") AS i ON a.[AGENT_CODE] = i.AgentCode " & _
+        "WHERE UCase(Trim(a.[TITLE (Code)] & '')) IN (" & titleList & ") OR i.AgentCode Is Not Null " & _
+        "ORDER BY a.[AGENT_CODE]", dbOpenSnapshot)
     Set rsOut = db.OpenRecordset("tblFA_Result", dbOpenDynaset, dbAppendOnly)
 
     Do Until rsIn.EOF
