@@ -224,6 +224,8 @@ Sub BuildFrontEnd()
 
     acc.LoadFromText acModule, "modFA", modFile
     Check "Nạp module modFA.bas"
+    acc.LoadFromText acModule, "modUpdate", here & "\modUpdate.bas"
+    Check "Nạp module modUpdate.bas"
 
     BuildForm
 
@@ -293,7 +295,9 @@ Sub BuildForm()
         Array("btnExport", "4. Xuất bảng kê Excel", "=BtnExport()"), _
         Array("btnLock", "5. Chốt kỳ", "=BtnLock()"), _
         Array("btnParams", "Bảng tham số chính sách", "=BtnParams()"), _
-        Array("btnRelink", "Kết nối file dữ liệu", "=BtnRelink()"))
+        Array("btnRelink", "Kết nối file dữ liệu", "=BtnRelink()"), _
+        Array("btnUpdate", "Cập nhật tool", "=BtnUpdate()"), _
+        Array("btnBackup", "Sao lưu dữ liệu", "=BtnBackup()"))
     top = 2200
     For i = 0 To UBound(btns)
         If i < 5 Then

@@ -13,6 +13,7 @@ Private Declare PtrSafe Function MessageBoxW Lib "user32" (ByVal hWnd As LongPtr
 Private Declare Function MessageBoxW Lib "user32" (ByVal hWnd As Long, ByVal lpText As Long, ByVal lpCaption As Long, ByVal uType As Long) As Long
 #End If
 
+Private Const FA_VERSION As String = "2026.10.31-2"
 Private Const FORM_MAIN As String = "frmMain"
 Private Const LOCK_TIMEOUT_MIN As Long = 30
 Private Const FA_TITLES As String = ",LP,"    ' Chuc danh duoc nhan FA (Muc A.II: LP toan thoi gian)
@@ -45,6 +46,17 @@ Private mErr As String
 ' =====================================================================
 ' Tien ich
 ' =====================================================================
+
+Public Function FaVersion() As String
+    FaVersion = FA_VERSION
+End Function
+
+' Sao luu file du lieu truoc thao tac ghi (dung Application.Run de khong phu thuoc modUpdate khi bien dich)
+Private Function AutoBackup() As Boolean
+    On Error Resume Next
+    AutoBackup = (Application.Run("BackupData", True) <> "")
+    If Err.Number <> 0 Then AutoBackup = True   ' chua cai modUpdate: bo qua
+End Function
 
 Public Function T(ByVal key As String) As String
     T = Nz(DLookup("TextValue", "tblText", "TextKey='" & key & "'"), key)
@@ -694,6 +706,7 @@ Public Function BtnImport()
 
     path = PickFile(T("D_PickExcel"), "Excel", "*.xlsx;*.xlsm;*.xls")
     If path = "" Then Exit Function
+    If Not AutoBackup() Then Exit Function
     Set db = CurrentDb
     SetStatus T("S_Importing")
 
@@ -819,6 +832,7 @@ Public Function BtnLock()
         MsgU T("E_LockNotCalc"), MB_ICONERROR: Exit Function
     End If
     If MsgU(T("Q_Lock") & " " & period & " / " & ky & "?", MB_YESNO Or MB_ICONQUESTION) <> IDYES Then Exit Function
+    If Not AutoBackup() Then Exit Function
     SetPeriodStatus period, ky, "LOCKED"
     SetStatus T("S_Locked") & " " & period & " / " & ky
 End Function

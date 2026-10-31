@@ -7,13 +7,14 @@ Căn cứ: Thông báo **ALL/AD/2210-005** (22/10/2026), Phụ lục 1 mục **A
 | File | Vai trò |
 |---|---|
 | `Build_FA_Tool.vbs` | Script dựng tool, chạy 1 lần |
-| `modFA.bas` | Module tính FA (VBA), script tự nạp |
+| `modFA.bas` | Module tính FA (VBA). Đây là file duy nhất thay mới khi nâng cấp tool |
+| `modUpdate.bas` | Nút **Cập nhật tool** và **Sao lưu dữ liệu**. Cài 1 lần, hầu như không đổi |
 | `FA_Input_Mau.xlsx` | File mẫu nhập liệu: 10 LP test và sheet kết quả kỳ vọng để đối soát |
 | `kiem-tra/fa_reference.py` | Bản tính đối chiếu bằng Python, dùng cùng logic với tool |
 
 ## 2. Cài đặt (máy Windows có Microsoft Access 2010 trở lên)
 
-1. Chép `Build_FA_Tool.vbs` và `modFA.bas` vào cùng một thư mục.
+1. Chép `Build_FA_Tool.vbs`, `modFA.bas` và `modUpdate.bas` vào cùng một thư mục.
 2. Double-click `Build_FA_Tool.vbs`. Chờ khoảng 30 giây đến khi hiện thông báo "Hoàn tất".
 3. Script tạo ra 2 file:
    - `FA_Data.accdb`: chứa dữ liệu, tham số và kết quả. Nếu nhiều người dùng chung, đặt file này ở thư mục mạng.
@@ -21,7 +22,23 @@ Căn cứ: Thông báo **ALL/AD/2210-005** (22/10/2026), Phụ lục 1 mục **A
 4. Mở `FA_App.accdb` và bấm **Enable Content**. Nên thêm thư mục vào *File > Options > Trust Center > Trusted Locations* để lần sau không phải bấm lại.
 5. Nếu đã chuyển `FA_Data.accdb` sang thư mục khác: bấm **Kết nối file dữ liệu** rồi chọn lại file.
 
-## 3. Quy trình mỗi kỳ
+## 3. Cập nhật tool và sao lưu
+
+**Nâng cấp tool (không mất dữ liệu):**
+1. Tải file `modFA.bas` mới và chép vào cùng thư mục với `FA_App.accdb`.
+2. Mở tool, bấm **Cập nhật tool**.
+3. Tool tự sao lưu dữ liệu, nạp code mới, rồi báo số phiên bản.
+
+Code nằm trong `FA_App.accdb`, dữ liệu nằm trong `FA_Data.accdb`, nên cập nhật code không động tới dữ liệu.
+
+**Tự sao lưu:** trước mỗi lần *nhập Excel*, *chốt kỳ* và *cập nhật tool*, tool chép `FA_Data.accdb` vào thư mục `Backup` nằm cạnh file dữ liệu. Tên bản sao có ngày giờ, ví dụ `FA_Data_20261031_143000.accdb`. Muốn lấy lại một bản: đóng tool, chép bản backup đè lên `FA_Data.accdb`.
+
+**Bản đã cài trước ngày 31/10/2026 (cài thêm 1 lần):**
+1. Alt+F11 → **File → Import File…** → chọn `modUpdate.bas`.
+2. Đặt con trỏ chuột vào dòng `Sub CaiDatCapNhat`, bấm **F5**. Form chính sẽ có thêm 2 nút.
+3. Bấm **Cập nhật tool** để nạp `modFA.bas` mới.
+
+## 4. Quy trình mỗi kỳ
 
 1. **Nhập dữ liệu từ Excel** theo đúng mẫu `FA_Input_Mau.xlsx` (sheet `Agent`, `Holiday`, `FA_Input`).
    - Sheet `Agent` nhận được **cả file xuất từ hệ thống**: chỉ cần dán nguyên file xuất vào sheet `Agent`. Tool tự tìm các cột `AGENT_CODE`, `FULL_NAME`, `APPOINTMENT_DATE`, `AGENCY_TYPE` (FT/PT), `TERMINATION_DATE`, `TITLE (Code)`, `AGENT_STATUS`, còn các cột khác được bỏ qua và không lưu vào tool.
@@ -35,7 +52,7 @@ Căn cứ: Thông báo **ALL/AD/2210-005** (22/10/2026), Phụ lục 1 mục **A
 - Khi một người đang chạy tính một tháng/kỳ, người khác bị chặn trong 30 phút.
 - Không cho tính lại kỳ trước nếu kỳ sau của cùng tháng đã có kết quả.
 
-## 4. Công thức đã cài
+## 5. Công thức đã cài
 
 `FA = Phụ cấp/ngày × Hệ số ngày làm việc × %Hệ số K2 × %Hệ số MDRT × %Hệ số HĐ`
 
@@ -60,7 +77,7 @@ Căn cứ: Thông báo **ALL/AD/2210-005** (22/10/2026), Phụ lục 1 mục **A
 
 Mọi mức tiền, tỷ lệ và ngưỡng nằm trong **Bảng tham số chính sách**. Khi chính sách thay đổi, chỉ cần sửa bảng, không phải sửa code.
 
-## 5. Giả định cần anh/chị xác nhận
+## 6. Giả định cần anh/chị xác nhận
 
 | # | Điểm văn bản chưa rõ | Cách tool đang xử lý |
 |---|---|---|
@@ -73,7 +90,7 @@ Mọi mức tiền, tỷ lệ và ngưỡng nằm trong **Bảng tham số chín
 | 7 | Ngưỡng 50.000đ cộng dồn (mục D.aa) áp trên tổng thu nhập | **Chưa áp dụng** vì tool chỉ tính FA |
 | 8 | PM/PD có được nhận FA không | **Không**: mục A.II chỉ nêu "LP toàn thời gian". Danh sách chức danh được nhận FA nằm ở hằng số `FA_TITLES` trong `modFA.bas` |
 
-## 6. Kiểm tra
+## 7. Kiểm tra
 
 Kết quả tính bằng file mẫu, tháng 10/2026, kỳ 1, phải khớp sheet `KetQua_KyVong`, cụ thể:
 
