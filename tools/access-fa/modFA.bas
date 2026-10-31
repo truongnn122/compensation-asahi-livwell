@@ -13,7 +13,7 @@ Private Declare PtrSafe Function MessageBoxW Lib "user32" (ByVal hWnd As LongPtr
 Private Declare Function MessageBoxW Lib "user32" (ByVal hWnd As Long, ByVal lpText As Long, ByVal lpCaption As Long, ByVal uType As Long) As Long
 #End If
 
-Private Const FA_VERSION As String = "2026.11.01-1"
+Private Const FA_VERSION As String = "2026.11.01-2"
 Private Const FORM_MAIN As String = "frmMain"
 Private Const LOCK_TIMEOUT_MIN As Long = 30
 Private Const FA_TITLES As String = ",LP,"    ' Chuc danh duoc nhan FA (Muc A.II: LP toan thoi gian)
@@ -92,14 +92,16 @@ Private Sub EnsureTexts()
 End Sub
 
 Private Function BackEndPath() As String
-    Dim td As DAO.TableDef, c As String
-    For Each td In CurrentDb.TableDefs
-        c = td.Connect
+    Dim db As DAO.Database, i As Long, c As String, nm As String
+    Set db = CurrentDb
+    For i = 0 To db.TableDefs.Count - 1
+        c = db.TableDefs(i).Connect
+        nm = db.TableDefs(i).Name
         If InStr(1, c, "DATABASE=", vbTextCompare) > 0 Then
             BackEndPath = Mid$(c, InStr(1, c, "DATABASE=", vbTextCompare) + 9)
-            If td.Name = "Tbl_Agent" Then Exit Function
+            If nm = "Tbl_Agent" Then Exit Function
         End If
-    Next td
+    Next i
     If BackEndPath = "" Then Err.Raise vbObjectError + 20, , U("Ch\u01B0a k\u1EBFt n\u1ED1i file Data chung. B\u1EA5m 'K\u1EBFt n\u1ED1i file d\u1EEF li\u1EC7u'.")
 End Function
 
@@ -774,22 +776,36 @@ Private Sub EnsureDataSchema()
     DropLink "tblAgentHist"
     LinkTable "Tbl_Agent", bePath
     LinkTable "Tbl_Attendance", bePath
+    CurrentDb.TableDefs.Refresh
 End Sub
 
-Private Function LocalTableDef(ByVal name As String) As DAO.TableDef
-    Dim td As DAO.TableDef
-    For Each td In CurrentDb.TableDefs
-        If td.Name = name Then Set LocalTableDef = td
-    Next td
+' Chuoi ket noi cua bang trong file tool: "" = bang cuc bo, "-" = khong co bang, con lai = bang lien ket
+Private Function LocalConnect(ByVal name As String) As String
+    Dim db As DAO.Database, i As Long
+    Set db = CurrentDb
+    db.TableDefs.Refresh
+    For i = 0 To db.TableDefs.Count - 1
+        If StrComp(db.TableDefs(i).Name, name, vbTextCompare) = 0 Then
+            LocalConnect = db.TableDefs(i).Connect
+            Exit Function
+        End If
+    Next i
+    LocalConnect = "-"
+End Function
+
+Private Function LocalFieldExists(ByVal tbl As String, ByVal fld As String) As Boolean
+    Dim db As DAO.Database, f As DAO.Field
+    Set db = CurrentDb
+    If LocalConnect(tbl) = "-" Then Exit Function
+    For Each f In db.TableDefs(tbl).Fields
+        If StrComp(f.Name, fld, vbTextCompare) = 0 Then LocalFieldExists = True
+    Next f
 End Function
 
 ' Bang dang lien ket sang file Data -> chep ve file tool roi xoa ben Data
 Private Sub MoveToLocal(ByVal name As String, ByVal bePath As String)
-    Dim td As DAO.TableDef, be As DAO.Database
-    Set td = LocalTableDef(name)
-    If td Is Nothing Then Exit Sub
-    If Len(td.Connect) = 0 Then Exit Sub
-    Set td = Nothing
+    Dim be As DAO.Database
+    If Len(LocalConnect(name)) = 0 Or LocalConnect(name) = "-" Then Exit Sub
     DoCmd.DeleteObject acTable, name
     DoCmd.TransferDatabase acImport, "Microsoft Access", bePath, acTable, name, name
     Set be = DBEngine.OpenDatabase(bePath)
@@ -798,23 +814,21 @@ Private Sub MoveToLocal(ByVal name As String, ByVal bePath As String)
 End Sub
 
 Private Sub DropLink(ByVal name As String)
-    Dim td As DAO.TableDef
-    Set td = LocalTableDef(name)
-    If td Is Nothing Then Exit Sub
-    If Len(td.Connect) > 0 Then
-        Set td = Nothing
-        DoCmd.DeleteObject acTable, name
-    End If
+    Dim c As String
+    c = LocalConnect(name)
+    If Len(c) > 0 And c <> "-" Then DoCmd.DeleteObject acTable, name
 End Sub
 
 Private Sub EnsureAgentTable(ByVal be As DAO.Database)
-    Dim spec As Variant, p As Variant, i As Long, ddl As String, td As DAO.TableDef
+    Dim spec As Variant, p As Variant, i As Long, ddl As String
     spec = AgentSpec()
     If TableExists(be, "Tbl_Agent") Then
-        Set td = be.TableDefs("Tbl_Agent")
         For i = 0 To UBound(spec)
             p = Split(spec(i), "|")
-            If Not HasField(td, p(4)) Then be.Execute "ALTER TABLE [Tbl_Agent] ADD COLUMN " & FieldDDL(p), dbFailOnError
+            If Not HasField(be, "Tbl_Agent", p(4)) Then
+                be.Execute "ALTER TABLE [Tbl_Agent] ADD COLUMN " & FieldDDL(p), dbFailOnError
+                be.TableDefs.Refresh
+            End If
         Next i
         Exit Sub
     End If
@@ -823,6 +837,7 @@ Private Sub EnsureAgentTable(ByVal be As DAO.Database)
         ddl = ddl & IIf(i = 0, "", ", ") & FieldDDL(p)
     Next i
     be.Execute "CREATE TABLE [Tbl_Agent] (" & ddl & ", CONSTRAINT pkTblAgent PRIMARY KEY ([Period], [AGENT_CODE]))", dbFailOnError
+    be.TableDefs.Refresh
 End Sub
 
 Private Sub EnsureAttendanceTable(ByVal be As DAO.Database)
@@ -835,16 +850,15 @@ End Sub
 
 ' Chep du lieu agent tu bang cu (tblAgent / tblAgentHist, ten cot cu hoac moi) sang Tbl_Agent roi xoa bang cu
 Private Sub MigrateOldAgent(ByVal be As DAO.Database, ByVal oldName As String)
-    Dim td As DAO.TableDef, spec As Variant, p As Variant, i As Long, cols As String, src As String, per As String
+    Dim spec As Variant, p As Variant, i As Long, cols As String, src As String, per As String
     If Not TableExists(be, oldName) Then Exit Sub
-    Set td = be.TableDefs(oldName)
     spec = AgentSpec()
     For i = 0 To UBound(spec)
         p = Split(spec(i), "|")
-        If HasField(td, p(4)) Then
+        If HasField(be, oldName, p(4)) Then
             cols = cols & ", [" & p(4) & "]": src = src & ", [" & p(4) & "]"
             If p(4) = "Period" Then per = p(4)
-        ElseIf HasField(td, p(2)) Then
+        ElseIf HasField(be, oldName, p(2)) Then
             cols = cols & ", [" & p(4) & "]": src = src & ", [" & p(2) & "]"
             If p(4) = "Period" Then per = p(2)
         End If
@@ -854,19 +868,21 @@ Private Sub MigrateOldAgent(ByVal be As DAO.Database, ByVal oldName As String)
         be.Execute "INSERT INTO [Tbl_Agent] (" & Mid$(cols, 3) & ") SELECT " & Mid$(src, 3) & _
                    " FROM [" & oldName & "] WHERE [" & per & "] Is Not Null"
     End If
-    Set td = Nothing
     be.Execute "DROP TABLE [" & oldName & "]", dbFailOnError
+    be.TableDefs.Refresh
 End Sub
 
 ' Luu kem thong tin dau vao da dung vao bang ket qua de tra lai ky cu khong phu thuoc Data chung
 Private Sub EnsureResultColumns()
-    Dim td As DAO.TableDef, cols As Variant, c As Variant
-    Set td = LocalTableDef("tblFA_Result")
-    If td Is Nothing Then Exit Sub
+    Dim cols As Variant, c As Variant
+    If LocalConnect("tblFA_Result") = "-" Then Exit Sub
     For Each c In Array("AgentName|TEXT(255)", "Title|TEXT(20)", "WorkModel|TEXT(10)", "AppointDate|DATETIME", _
                         "AgentPeriod|TEXT(6)", "AttRows|INTEGER", "InputSource|TEXT(20)")
         cols = Split(c, "|")
-        If Not HasField(td, cols(0)) Then CurrentDb.Execute "ALTER TABLE tblFA_Result ADD COLUMN [" & cols(0) & "] " & cols(1), dbFailOnError
+        If Not LocalFieldExists("tblFA_Result", cols(0)) Then
+            CurrentDb.Execute "ALTER TABLE tblFA_Result ADD COLUMN [" & cols(0) & "] " & cols(1), dbFailOnError
+            CurrentDb.TableDefs.Refresh
+        End If
     Next c
 End Sub
 
@@ -877,9 +893,9 @@ Private Function TableExists(ByVal db As DAO.Database, ByVal name As String) As 
     Next td
 End Function
 
-Private Function HasField(ByVal td As DAO.TableDef, ByVal name As String) As Boolean
+Private Function HasField(ByVal db As DAO.Database, ByVal tbl As String, ByVal name As String) As Boolean
     Dim f As DAO.Field
-    For Each f In td.Fields
+    For Each f In db.TableDefs(tbl).Fields
         If StrComp(f.Name, name, vbTextCompare) = 0 Then HasField = True
     Next f
 End Function
@@ -895,14 +911,15 @@ Private Function FieldDDL(ByVal p As Variant) As String
 End Function
 
 Private Sub LinkTable(ByVal name As String, ByVal bePath As String)
-    Dim td As DAO.TableDef
-    Set td = LocalTableDef(name)
-    If Not td Is Nothing Then
-        td.Connect = ";DATABASE=" & bePath
-        td.RefreshLink
-        Exit Sub
+    Dim db As DAO.Database, c As String
+    c = LocalConnect(name)
+    If c = "-" Then
+        DoCmd.TransferDatabase acLink, "Microsoft Access", bePath, acTable, name, name
+    ElseIf Len(c) > 0 Then
+        Set db = CurrentDb
+        db.TableDefs(name).Connect = ";DATABASE=" & bePath
+        db.TableDefs(name).RefreshLink
     End If
-    DoCmd.TransferDatabase acLink, "Microsoft Access", bePath, acTable, name, name
 End Sub
 
 ' Query hien thi Tbl_Agent theo dung thu tu va tieu de cot cua file he thong
