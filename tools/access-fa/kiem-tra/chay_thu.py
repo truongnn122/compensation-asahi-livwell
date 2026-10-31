@@ -3,7 +3,9 @@
 Doc sheet Agent (mau tool hoac file xuat he thong), Holiday, FA_Input; tinh FA cho
 thang/ky chi dinh; in tung buoc kiem tra va xuat bang ke Excel.
 
-Chay: python3 chay_thu.py <file.xlsx> <YYYYMM> <ky> <file_ket_qua.xlsx>
+Chay: python3 chay_thu.py <file.xlsx> <YYYYMM> <ky> <file_ket_qua.xlsx> [file_cham_cong.xlsx]
+Giong tool: duyet theo danh sach agent (ban chup thang <= YYYYMM gan nhat), so ngay di lam lay tu
+bang cham cong neu co, cac so con lai (FYC, HD, K2...) lay tu sheet FA_Input neu co.
 """
 
 import sys
@@ -51,7 +53,35 @@ def to_num(v):
     return float(v)
 
 
-def load_agents(wb):
+def load_attendance(path, period):
+    """Tong so cong theo ma DL trong thang; dong trung (cung ngay, cung ma) chi tinh 1 lan."""
+    wb = load_workbook(path, data_only=True)
+    for ws in wb.worksheets:
+        rows = list(ws.iter_rows(values_only=True))
+        hdr = {norm(h): i for i, h in reversed(list(enumerate(rows[0])))} if rows else {}
+        if "MÃSỐĐL" in hdr and "NGÀYCHẤMCÔNG" in hdr:
+            break
+    else:
+        return {}, 0
+    seen, days, dup = set(), {}, 0
+    for r in rows[1:]:
+        code, d = str(r[hdr["MÃSỐĐL"]] or "").strip(), to_date(r[hdr["NGÀYCHẤMCÔNG"]])
+        if not code or not d:
+            continue
+        per = str(r[hdr["PERIOD"]]).strip() if "PERIOD" in hdr and r[hdr["PERIOD"]] else d.strftime("%Y%m")
+        if per != period:
+            continue
+        if (d, code) in seen:
+            dup += 1
+            continue
+        seen.add((d, code))
+        am = to_num(r[hdr.get("BUỔISÁNG")]) if "BUỔISÁNG" in hdr else 0
+        pm = to_num(r[hdr.get("BUỔICHIỀU")]) if "BUỔICHIỀU" in hdr else 0
+        days[code] = days.get(code, 0) + (am or 0) + (pm or 0)
+    return days, dup
+
+
+def load_agents(wb, period="999999"):
     rows, hdr = read_sheet(wb, "Agent")
     c = dict(
         code=col(hdr, "AGENTCODE"), name=col(hdr, "AGENTNAME", "FULLNAME"),
@@ -62,25 +92,30 @@ def load_agents(wb):
     missing = [k for k in ("code", "appoint", "model") if c[k] is None]
     if missing:
         sys.exit(f"Sheet Agent thieu cot bat buoc: {missing}")
-    agents = {}
+    agents, per_of = {}, {}
+    cper = col(hdr, "PERIOD")
     for r in rows:
         code = str(r[c["code"]] or "").strip()
-        if not code:
+        per = str(r[cper] or "").strip() if cper is not None else ""
+        if not code or (per and per > period) or (code in per_of and per_of[code] >= per):
             continue
+        per_of[code] = per
         get = lambda k: r[c[k]] if c[k] is not None else None
         agents[code] = dict(
             Name=str(get("name") or "").strip(), AppointDate=to_date(get("appoint")),
             WorkModel=str(get("model") or "").strip().upper()[:2], TerminateDate=to_date(get("term")),
             Title=str(get("title") or "").strip().upper(), Status=str(get("status") or "").strip(),
+            Training=str(r[col(hdr, "TRAININGCOMPLETED")] or "").strip().upper() in ("Y", "YES", "1", "TRUE", "X")
+            if col(hdr, "TRAININGCOMPLETED") is not None else False,
         )
     return agents
 
 
-def main(path, period, ky, out):
+def main(path, period, ky, out, att_path=None):
     wb = load_workbook(path, data_only=True)
 
     print("== BUOC 1: Danh sach agent ==")
-    agents = load_agents(wb)
+    agents = load_agents(wb, period)
     by_title = {}
     for a in agents.values():
         by_title[a["Title"] or "(trong)"] = by_title.get(a["Title"] or "(trong)", 0) + 1
@@ -116,6 +151,15 @@ def main(path, period, ky, out):
     for code, a in agents.items():
         if a["Title"] in ("", "LP") and code not in inputs:
             print(f"  ! {code} ({a['Name']}, {a['Title'] or '?'}): chua co dong FA_Input")
+
+    att, dup = load_attendance(att_path, period) if att_path else (None, 0)
+    if att is not None:
+        print(f"== BUOC 2b: Cham cong thang {period}: {len(att)} agent, bo {dup} dong trung ==")
+        for code, a in agents.items():
+            inp = inputs.setdefault(code, dict(FYC=0, Contracts=0, Recruits=0, K2Pct=None, MDRTPrev=False,
+                                               TrainingDone=a.get("Training", False), StatusEOM=a["Status"]))
+            inp["ActualDays"] = att.get(code, 0)
+            print(f"  {code} {a['Name']:<22} {a['Title']:<3} cong={inp['ActualDays']}")
 
     print("== BUOC 3: Tinh FA ==")
     res = []
@@ -163,4 +207,4 @@ def write_result(path, period, ky, res):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4])
+    main(sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4], sys.argv[5] if len(sys.argv) > 5 else None)

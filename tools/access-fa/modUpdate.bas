@@ -2,7 +2,7 @@ Option Compare Database
 Option Explicit
 
 ' =====================================================================
-' CAP NHAT TOOL & SAO LUU DU LIEU
+' CAP NHAT TOOL & SAO LUU DU LIEU (file Data chung + file tool)
 ' Module nay it thay doi. Moi lan nang cap chi thay modFA.bas:
 '   chep modFA.bas moi vao cung thu muc voi FA_App.accdb -> bam "Cap nhat tool".
 ' Lan dau cai dat: Alt+F11 > File > Import File > modUpdate.bas,
@@ -47,23 +47,34 @@ Private Function Msg(ByVal text As String, Optional ByVal flags As Long = 64) As
 End Function
 
 Private Function DataFilePath() As String
-    Dim c As String
-    c = CurrentDb.TableDefs("tblAgent").Connect
-    DataFilePath = Mid$(c, InStr(1, c, "DATABASE=", vbTextCompare) + 9)
+    Dim td As DAO.TableDef, c As String
+    For Each td In CurrentDb.TableDefs
+        c = td.Connect
+        If InStr(1, c, "DATABASE=", vbTextCompare) > 0 Then
+            DataFilePath = Mid$(c, InStr(1, c, "DATABASE=", vbTextCompare) + 9)
+            Exit Function
+        End If
+    Next td
 End Function
 
-' Chep FA_Data.accdb vao thu muc Backup canh file du lieu. Tra ve duong dan ban sao ("" neu loi).
+' Sao luu file Data chung va file tool (chua tham so + ket qua thuong) vao thu muc Backup canh file Data.
+' Tra ve duong dan ban sao file Data ("" neu loi).
 Public Function BackupData(Optional ByVal silent As Boolean = False) As String
-    Dim fso As Object, src As String, folder As String, dst As String
+    Dim fso As Object, src As String, folder As String, stamp As String, dst As String
     On Error GoTo Fail
     Set fso = CreateObject("Scripting.FileSystemObject")
     src = DataFilePath()
+    If src = "" Then src = CurrentProject.FullName
     folder = fso.GetParentFolderName(src) & "\Backup"
     If Not fso.FolderExists(folder) Then fso.CreateFolder folder
-    dst = folder & "\FA_Data_" & Format$(Now(), "yyyymmdd_hhnnss") & ".accdb"
+    stamp = Format$(Now(), "yyyymmdd_hhnnss")
+    dst = folder & "\" & fso.GetBaseName(src) & "_" & stamp & ".accdb"
     fso.CopyFile src, dst, False
+    If src <> CurrentProject.FullName Then
+        fso.CopyFile CurrentProject.FullName, folder & "\" & fso.GetBaseName(CurrentProject.FullName) & "_" & stamp & ".accdb", False
+    End If
     BackupData = dst
-    If Not silent Then Msg UX(M_BK_DONE) & vbCrLf & dst
+    If Not silent Then Msg UX(M_BK_DONE) & vbCrLf & folder
     Exit Function
 Fail:
     Msg UX(M_BK_ERR) & vbCrLf & Err.Description, 16

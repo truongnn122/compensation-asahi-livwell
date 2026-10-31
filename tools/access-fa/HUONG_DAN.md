@@ -2,6 +2,18 @@
 
 Căn cứ: Thông báo **ALL/AD/2210-005** (22/10/2026), Phụ lục 1 mục **A.II**, các định nghĩa D.k, D.l, D.s, D.z.
 
+## 0. Mô hình file
+
+| File Access | Chứa | Ai dùng |
+|---|---|---|
+| **Data chung** (`FA_Data.accdb`, nên đổi tên `Data_Chung.accdb`) | Chỉ 2 bảng: `Tbl_Agent` (98 cột, nhiều tháng, khóa `Period` + `AGENT_CODE`) và `Tbl_Attendance` (chấm công từng ngày). Sau này thêm bảng doanh số | Mọi khoản thưởng đọc chung |
+| **Mỗi khoản thưởng 1 file** (`FA_App.accdb`, …) | Tham số chính sách, ngày lễ, số liệu nhập tay, **bảng kết quả** `tblFA_Result`, trạng thái chốt kỳ | Riêng khoản đó |
+| **Tổng hợp** (làm sau) | Liên kết bảng kết quả của các khoản thưởng → tổng thu nhập | |
+
+- Bảng kết quả lưu cả số liệu đầu vào đã dùng: họ tên, chức danh, FT/PT, ngày bổ nhiệm, tháng của bản agent và số dòng chấm công. Tra lại kỳ cũ bất cứ lúc nào vẫn thấy đúng như lúc tính, kể cả khi Data chung đã thay đổi.
+- **Không chép đè file tool** (`FA_App.accdb`) bằng bản mới, vì kết quả và tham số nằm trong đó. Nâng cấp bằng nút **Cập nhật tool**. Nút này chỉ thay code.
+- Đổi tên hoặc chuyển file Data chung: bấm **Kết nối file dữ liệu** rồi chọn lại file.
+
 ## 1. Bộ file
 
 | File | Vai trò |
@@ -38,14 +50,21 @@ Code nằm trong `FA_App.accdb`, dữ liệu nằm trong `FA_Data.accdb`, nên c
 2. Đặt con trỏ chuột vào dòng `Sub CaiDatCapNhat`, bấm **F5**. Form chính sẽ có thêm 2 nút.
 3. Bấm **Cập nhật tool** để nạp `modFA.bas` mới.
 
-## 4. Danh sách Agent (nạp hàng tháng)
+## 4. Chấm công (Tbl_Attendance)
+
+- Nạp file chấm công bằng nút **Nạp file Excel**. Tool tự nhận sheet có cột `Mã số ĐL` và `Ngày chấm công`, tên sheet không quan trọng. Các cột còn lại: `Period`, `Họ và tên`, `Buổi sáng`, `Buổi chiều`, `Số công`.
+- Nạp lại tháng nào thì thay toàn bộ chấm công của tháng đó. **Dòng trùng** (cùng ngày, cùng mã) chỉ giữ 1 dòng, thông báo sau khi nạp sẽ báo số dòng đã bỏ.
+- Số ngày đi làm thực tế dùng để tính FA = tổng `Số công` trong tháng. Nếu ô `Số công` trống thì lấy `Buổi sáng` + `Buổi chiều`.
+- Xem tổng hợp: form **Danh sách Agent** → **Xem chấm công**.
+
+## 4b. Danh sách Agent (nạp hàng tháng)
 
 - Bấm **Danh sách Agent** trên form chính. Bảng hiện đủ 98 cột theo đúng thứ tự file xuất từ hệ thống, có ô tìm theo mã hoặc họ tên, lọc theo chức danh, nút **Nạp file Excel** và **Xuất Excel**.
 - Mỗi tháng nạp file xuất hệ thống, chỉ cần sheet tên `Agent` và có cột `Period`:
-  - `tblAgent` được cập nhật thành thông tin **mới nhất**: agent mới được thêm vào, agent đã có được cập nhật.
-  - `tblAgentHist` lưu **bản chụp riêng của từng tháng** theo `Period`. Nạp lại cùng một tháng thì chỉ ghi đè tháng đó.
-- Tính FA tháng nào thì tool dùng chức danh, ngày bổ nhiệm và FT/PT **của đúng tháng đó** trong `tblAgentHist`. Nếu chưa nạp file của tháng đó thì dùng bản mới nhất.
-- Bảng `tblAgent` và `tblAgentHist` dùng **đúng tên cột và thứ tự của file Excel** (`Period`, `Channel`, …, `AGENT_CODE`, `FULL_NAME`, `TITLE (Code)`…). Bảng dựng từ bản cũ sẽ tự chuyển sang cấu trúc này khi cập nhật, không mất dữ liệu.
+  - `Tbl_Agent` lưu **mỗi tháng một bản** theo `Period`. Nạp lại cùng tháng thì thay đúng tháng đó, các tháng khác giữ nguyên.
+- Tính FA tháng nào thì tool dùng chức danh, ngày bổ nhiệm và FT/PT **của đúng tháng đó**. Nếu chưa nạp file của tháng đó thì dùng bản gần nhất trước đó. Form Danh sách Agent có ô chọn **Tháng (Period)**.
+- Khi chưa có bảng doanh số: FYC, số hợp đồng, K2, MDRT lấy từ sheet `FA_Input` nếu có, không có thì bằng 0. Huấn luyện lấy từ cột `TRAINING_COMPLETED` (`Y` là đã hoàn tất). Tình trạng SE lấy từ cột `AGENT_STATUS`.
+- Bảng `Tbl_Agent` dùng **đúng tên cột và thứ tự của file Excel** (`Period`, `Channel`, …, `AGENT_CODE`, `FULL_NAME`, `TITLE (Code)`…). Bảng dựng từ bản cũ sẽ tự chuyển sang cấu trúc này khi cập nhật, không mất dữ liệu.
 - Cột trùng tên trong file được đặt tên riêng:
   - `INDIRECT 2_NAME` lần thứ nhất → `INDIRECT 2_CODE`;
   - `CHANNEL` → `CHANNEL (2)`;
