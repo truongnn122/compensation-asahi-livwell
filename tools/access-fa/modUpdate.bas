@@ -32,7 +32,7 @@ Private Function UX(ByVal s As String) As String
     i = 1
     Do While i <= Len(s)
         If Mid$(s, i, 2) = "\u" Then
-            out = out & ChrW$(CLng("&H" & Mid$(s, i + 2, 4) & "&"))
+            out = out & ChrW$(CLng("&H" & Mid$(s, i + 2, 4)))
             i = i + 6
         Else
             out = out & Mid$(s, i, 1)

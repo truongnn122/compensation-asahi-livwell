@@ -13,7 +13,7 @@ Private Declare PtrSafe Function MessageBoxW Lib "user32" (ByVal hWnd As LongPtr
 Private Declare Function MessageBoxW Lib "user32" (ByVal hWnd As Long, ByVal lpText As Long, ByVal lpCaption As Long, ByVal uType As Long) As Long
 #End If
 
-Private Const FA_VERSION As String = "2026.10.31-3"
+Private Const FA_VERSION As String = "2026.10.31-4"
 Private Const FORM_MAIN As String = "frmMain"
 Private Const LOCK_TIMEOUT_MIN As Long = 30
 Private Const FA_TITLES As String = ",LP,"    ' Chuc danh duoc nhan FA (Muc A.II: LP toan thoi gian)
@@ -68,7 +68,7 @@ Public Function U(ByVal s As String) As String
     i = 1
     Do While i <= Len(s)
         If Mid$(s, i, 2) = "\u" Then
-            out = out & ChrW$(CLng("&H" & Mid$(s, i + 2, 4) & "&"))
+            out = out & ChrW$(CLng("&H" & Mid$(s, i + 2, 4)))
             i = i + 6
         Else
             out = out & Mid$(s, i, 1)
@@ -979,6 +979,12 @@ Public Function FaAfterUpdate()
     EnsureMainButton "btnAgents", U("Danh s\u00E1ch Agent"), "=BtnAgents()", 5000, 4440
 End Function
 
+' O Excel loi (#N/A, #VALUE!...) tra ve chuoi rong thay vi gay loi Type mismatch
+Private Function CellText(ByVal v As Variant) As String
+    If IsError(v) Or IsEmpty(v) Or IsNull(v) Then Exit Function
+    CellText = CStr(v)
+End Function
+
 Private Function ToDateOrNull(ByVal v As Variant) As Variant
     ToDateOrNull = Null
     If IsEmpty(v) Or IsNull(v) Then Exit Function
@@ -1059,7 +1065,7 @@ Private Function ImportAgents(ByVal path As String, ByRef nAgents As Long) As Bo
 
     Set rs = CurrentDb.OpenRecordset("tblAgent", dbOpenDynaset)
     For r = 2 To UBound(data, 1)
-        code = Trim$(data(r, cCode) & "")
+        code = Trim$(CellText(data(r, cCode)))
         If Len(code) > 0 Then
             rs.FindFirst "AgentCode=" & Q(code)
             If rs.NoMatch Then
@@ -1068,28 +1074,28 @@ Private Function ImportAgents(ByVal path As String, ByRef nAgents As Long) As Bo
             Else
                 rs.Edit
             End If
-            If cName > 0 Then rs!AgentName = Left$(Trim$(data(r, cName) & ""), 100)
+            If cName > 0 Then rs!AgentName = Left$(Trim$(CellText(data(r, cName))), 100)
             rs!AppointDate = ToDateOrNull(data(r, cAppoint))
-            rs!WorkModel = Left$(UCase$(Trim$(data(r, cModel) & "")), 2)
+            rs!WorkModel = Left$(UCase$(Trim$(CellText(data(r, cModel)))), 2)
             If cTerm > 0 Then rs!TerminateDate = ToDateOrNull(data(r, cTerm))
-            If cTitle > 0 Then rs!Title = Left$(UCase$(Trim$(data(r, cTitle) & "")), 20)
-            If cStatus > 0 Then rs!AgentStatus = Left$(Trim$(data(r, cStatus) & ""), 20)
+            If cTitle > 0 Then rs!Title = Left$(UCase$(Trim$(CellText(data(r, cTitle)))), 20)
+            If cStatus > 0 Then rs!AgentStatus = Left$(Trim$(CellText(data(r, cStatus))), 20)
             For c = 0 To UBound(spec)
                 If extraCol(c) > 0 Then
                     p = Split(spec(c), "|")
                     If p(3) = "D" Then
                         rs.Fields(p(2)) = ToDateOrNull(data(r, extraCol(c)))
-                    ElseIf Len(Trim$(data(r, extraCol(c)) & "")) = 0 Then
+                    ElseIf Len(Trim$(CellText(data(r, extraCol(c))))) = 0 Then
                         rs.Fields(p(2)) = Null
                     Else
-                        rs.Fields(p(2)) = Left$(Trim$(data(r, extraCol(c)) & ""), 255)
+                        rs.Fields(p(2)) = Left$(Trim$(CellText(data(r, extraCol(c)))), 255)
                     End If
                 End If
             Next c
             rs.Update
             nAgents = nAgents + 1
             If cPeriod > 0 Then
-                key = Trim$(data(r, cPeriod) & "")
+                key = Trim$(CellText(data(r, cPeriod)))
                 If Len(key) > 0 Then periods(key) = True
             End If
         End If
