@@ -51,3 +51,4 @@ tools/access-fa/*.zip
 tools/access-fa/ket-qua/
 tools/*.zip
 tools/access-fapm/ket-qua/
+tools/**/*.zip
