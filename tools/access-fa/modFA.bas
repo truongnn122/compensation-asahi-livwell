@@ -13,7 +13,7 @@ Private Declare PtrSafe Function MessageBoxW Lib "user32" (ByVal hWnd As LongPtr
 Private Declare Function MessageBoxW Lib "user32" (ByVal hWnd As Long, ByVal lpText As Long, ByVal lpCaption As Long, ByVal uType As Long) As Long
 #End If
 
-Private Const FA_VERSION As String = "2026.11.01-2"
+Private Const FA_VERSION As String = "2026.11.01-3"
 Private Const FORM_MAIN As String = "frmMain"
 Private Const LOCK_TIMEOUT_MIN As Long = 30
 Private Const FA_TITLES As String = ",LP,"    ' Chuc danh duoc nhan FA (Muc A.II: LP toan thoi gian)
@@ -1336,7 +1336,7 @@ End Function
 ' Nap lai thang nao thi thay du lieu thang do. Dong trung (cung ngay, cung ma) chi giu 1 dong.
 Private Function ImportAttendance(ByVal path As String, ByRef nRows As Long, ByRef nDup As Long) As Boolean
     Dim xl As Object, wb As Object, ws As Object, data As Variant, hdr As Object, seen As Object
-    Dim cPer As Long, cDate As Long, cCode As Long, cName As Long, cAM As Long, cPM As Long, cCong As Long
+    Dim cPer As Long, cNgay As Long, cCode As Long, cName As Long, cAM As Long, cPM As Long, cCong As Long
     Dim r As Long, c As Long, key As String, code As String, per As String, d As Variant
     Dim rs As DAO.Recordset, periods As Object, pk As Variant, am As Double, pm As Double, cong As Variant
 
@@ -1359,7 +1359,7 @@ Private Function ImportAttendance(ByVal path As String, ByRef nRows As Long, ByR
     If hdr Is Nothing Then GoTo Done
 
     cCode = hdr(NormHeader(AttCol("CODE")))
-    cDate = hdr(NormHeader(AttCol("DATE")))
+    cNgay = hdr(NormHeader(AttCol("DATE")))
     If hdr.Exists("PERIOD") Then cPer = hdr("PERIOD")
     If hdr.Exists(NormHeader(AttCol("NAME"))) Then cName = hdr(NormHeader(AttCol("NAME")))
     If hdr.Exists(NormHeader(AttCol("AM"))) Then cAM = hdr(NormHeader(AttCol("AM")))
@@ -1370,7 +1370,7 @@ Private Function ImportAttendance(ByVal path As String, ByRef nRows As Long, ByR
     Set seen = NewDict()
     For r = 2 To UBound(data, 1)
         code = Trim$(CellText(data(r, cCode)))
-        d = ToDateOrNull(data(r, cDate))
+        d = ToDateOrNull(data(r, cNgay))
         If Len(code) > 0 And Not IsNull(d) Then
             per = ""
             If cPer > 0 Then per = Trim$(CellText(data(r, cPer)))
@@ -1401,7 +1401,7 @@ Private Function ImportAttendance(ByVal path As String, ByRef nRows As Long, ByR
         If IsNull(cong) Then cong = am + pm
         rs.AddNew
         rs.Fields("Period") = Split(pk, "|")(0)
-        rs.Fields(AttCol("DATE")) = ToDateOrNull(data(r, cDate))
+        rs.Fields(AttCol("DATE")) = ToDateOrNull(data(r, cNgay))
         rs.Fields(AttCol("CODE")) = Trim$(CellText(data(r, cCode)))
         If cName > 0 Then rs.Fields(AttCol("NAME")) = Left$(Trim$(CellText(data(r, cName))), 255)
         rs.Fields(AttCol("AM")) = am
