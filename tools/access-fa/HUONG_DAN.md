@@ -41,7 +41,7 @@ Căn cứ: Thông báo **ALL/AD/2210-005** (22/10/2026), Phụ lục 1 mục **A
 2. Mở tool, bấm **Cập nhật tool**.
 3. Tool tự sao lưu dữ liệu, nạp code mới, rồi báo số phiên bản.
 
-Code nằm trong `FA_App.accdb`, dữ liệu nằm trong `FA_Data.accdb`, nên cập nhật code không động tới dữ liệu.
+Code nằm trong `FA_App.accdb`, dữ liệu nằm trong `Data.accdb`, nên cập nhật code không động tới dữ liệu.
 
 **Tự sao lưu:** trước mỗi lần *nhập Excel*, *chốt kỳ* và *cập nhật tool*, tool chép cả `Data.accdb` và `FA_App.accdb` vào thư mục `Backup` nằm cạnh file Data. Tên bản sao có ngày giờ. Muốn lấy lại một bản: đóng tool, chép bản backup đè lên file tương ứng.
 
@@ -69,7 +69,7 @@ Code nằm trong `FA_App.accdb`, dữ liệu nằm trong `FA_Data.accdb`, nên c
   - `INDIRECT 2_NAME` lần thứ nhất → `INDIRECT 2_CODE`;
   - `CHANNEL` → `CHANNEL (2)`;
   - `CONTRACT_TYPE` → `CONTRACT_TYPE Agent` / `CONTRACT_TYPE Leader`.
-- File có thông tin cá nhân (CCCD, tài khoản ngân hàng): nên đặt mật khẩu cho `FA_Data.accdb` (*File → Encrypt with Password*) và giới hạn quyền truy cập thư mục.
+- File có thông tin cá nhân (CCCD, tài khoản ngân hàng): nên đặt mật khẩu cho `Data.accdb` (*File → Encrypt with Password*) và giới hạn quyền truy cập thư mục.
 
 ## 5. Quy trình mỗi kỳ
 
