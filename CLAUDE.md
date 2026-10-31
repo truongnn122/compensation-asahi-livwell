@@ -12,9 +12,19 @@ yarn lint         # Run ESLint
 yarn lint:fix     # Run ESLint with auto-fix
 yarn format       # Format code with Prettier
 yarn format:check # Check formatting without changes
+yarn test         # Run Jest (next/jest + jsdom); tests live in __tests__/ or *.test.ts
 ```
 
-No test runner is configured yet.
+### Compensation policy engine
+
+`src/lib/compensation/policy/` is the MVI agency compensation engine ported
+from the Income Tool (memo set ALL/AD/2608): pure, synchronous TypeScript
+functions, money in triệu VND, percentages as 0–100 numbers, `k2Percent: null`
+means "chưa có K2". Every rate, threshold and cap is an exported constant with
+a Jest test; change a number there only together with its test and the memo
+reference in the comment. `src/lib/compensation/engine.ts` is the older
+premium-event engine with placeholder rates and is being replaced by the
+policy engine.
 
 ## Tech Stack
 
