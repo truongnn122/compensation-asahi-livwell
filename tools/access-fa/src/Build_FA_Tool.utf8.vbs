@@ -78,7 +78,7 @@ Sub BuildBackEnd()
     Set db = acc.CurrentDb
 
     Exec db, "CREATE TABLE tblAgent (AgentCode TEXT(20) CONSTRAINT pkAgent PRIMARY KEY, AgentName TEXT(100), " & _
-             "AppointDate DATETIME, WorkModel TEXT(2), TerminateDate DATETIME)"
+             "AppointDate DATETIME, WorkModel TEXT(2), TerminateDate DATETIME, Title TEXT(20), AgentStatus TEXT(20))"
     Exec db, "CREATE TABLE tblHoliday (HolidayDate DATETIME CONSTRAINT pkHoliday PRIMARY KEY, Description TEXT(100))"
     Exec db, "CREATE TABLE tblFA_Input (Period TEXT(6) NOT NULL, Ky INTEGER NOT NULL, AgentCode TEXT(20) NOT NULL, " & _
              "ActualDays DOUBLE, FYC CURRENCY, Contracts DOUBLE, Recruits INTEGER, K2Pct DOUBLE, " & _
@@ -178,6 +178,9 @@ Sub BuildFrontEnd()
         Array("R_NoAgent", "Không có trong danh sách Agent"), _
         Array("R_NotAppointed", "Ngày bổ nhiệm sau tháng tính"), _
         Array("R_NotFT", "Không phải LP toàn thời gian"), _
+        Array("R_NotLP", "Chức danh không phải LP (FA chỉ áp dụng LP toàn thời gian)"), _
+        Array("E_AgentCols", "Sheet Agent thiếu cột bắt buộc: mã đại lý (AgentCode/AGENT_CODE), ngày bổ nhiệm (AppointDate/APPOINTMENT_DATE), mô hình (WorkModel/AGENCY_TYPE)."), _
+        Array("S_AgentsImported", "Đã nạp danh sách agent, số dòng:"), _
         Array("R_Terminated", "HĐ đại lý chấm dứt trong/trước tháng tính"), _
         Array("R_SE", "Tình trạng SE cuối tháng"), _
         Array("R_Training", "Chưa hoàn tất huấn luyện bắt buộc"), _
@@ -204,7 +207,7 @@ Sub BuildFrontEnd()
     Next
 
     db.CreateQueryDef "qryFA_BangKe", _
-        "SELECT r.Period, r.Ky, r.AgentCode, a.AgentName AS [Họ tên], a.WorkModel AS [Mô hình], " & _
+        "SELECT r.Period, r.Ky, r.AgentCode, a.AgentName AS [Họ tên], a.Title AS [Chức danh], a.WorkModel AS [Mô hình], " & _
         "r.WorkMonthNo AS [Tháng làm việc thứ], r.WorkDaysBase AS [Số ngày làm việc của tháng], " & _
         "r.ActualDays AS [Số ngày đi làm thực tế], r.AttendancePct AS [Tỷ lệ chấm công], " & _
         "r.DayFactor AS [Hệ số ngày làm việc], r.FYC AS [FYC phát sinh], r.Contracts AS [Số HĐ phát sinh], " & _

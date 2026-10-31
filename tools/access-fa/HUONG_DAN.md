@@ -24,6 +24,7 @@ Căn cứ: Thông báo **ALL/AD/2210-005** (22/10/2026), Phụ lục 1 mục **A
 ## 3. Quy trình mỗi kỳ
 
 1. **Nhập dữ liệu từ Excel** theo đúng mẫu `FA_Input_Mau.xlsx` (sheet `Agent`, `Holiday`, `FA_Input`).
+   - Sheet `Agent` nhận được **cả file xuất từ hệ thống**: chỉ cần dán nguyên file xuất vào sheet `Agent`. Tool tự tìm các cột `AGENT_CODE`, `FULL_NAME`, `APPOINTMENT_DATE`, `AGENCY_TYPE` (FT/PT), `TERMINATION_DATE`, `TITLE (Code)`, `AGENT_STATUS`, còn các cột khác được bỏ qua và không lưu vào tool.
 2. Nhập tháng (YYYYMM) và chọn kỳ chi trả (1–4), sau đó bấm **Chạy tính FA**.
 3. **Xem kết quả** hoặc **Xuất bảng kê Excel**. Cột *Chi kỳ này* là số tiền cần chi.
 4. Sau khi đã đối soát và chi trả, bấm **Chốt kỳ**. Kỳ đã chốt không thể tính lại hay bị nhập đè.
@@ -45,6 +46,7 @@ Căn cứ: Thông báo **ALL/AD/2210-005** (22/10/2026), Phụ lục 1 mục **A
   - mẫu số %attendance = số ngày làm việc tính từ ngày bổ nhiệm;
   - hệ số ngày làm việc = số ngày đi làm thực tế, tối đa 22.
 - **Điều kiện nhận FA:** đồng thời thỏa các điều kiện sau:
+  - chức danh là LP (PM, PD... không được tính FA);
   - là LP toàn thời gian;
   - đã hoàn tất huấn luyện bắt buộc;
   - %attendance ≥ 70% hoặc đi làm ≥ 15 ngày;
@@ -69,6 +71,7 @@ Mọi mức tiền, tỷ lệ và ngưỡng nằm trong **Bảng tham số chín
 | 5 | "FA đã chi trả" dùng để cấn trừ bảo đảm quý | Gồm FA tháng, không gồm khoản bù tháng 1 |
 | 6 | Xét bảo đảm quý cho Q4/2026 khi chính sách mới hiệu lực từ 01/10/2026 | Tool tự xét theo dữ liệu Q3 nếu đã nhập; không nhập thì không có bảo đảm |
 | 7 | Ngưỡng 50.000đ cộng dồn (mục D.aa) áp trên tổng thu nhập | **Chưa áp dụng** vì tool chỉ tính FA |
+| 8 | PM/PD có được nhận FA không | **Không**: mục A.II chỉ nêu "LP toàn thời gian". Danh sách chức danh được nhận FA nằm ở hằng số `FA_TITLES` trong `modFA.bas` |
 
 ## 6. Kiểm tra
 
@@ -79,4 +82,4 @@ Kết quả tính bằng file mẫu, tháng 10/2026, kỳ 1, phải khớp sheet
 | LP001 | Ví dụ trang 3 của văn bản | 10.500.000 |
 | LP002 | Mức 0,7 triệu, K2 120%, MDRT 120% | 22.176.000 |
 | LP006 | LP mới, được bảo đảm | 4.200.000 |
-| LP004, LP005, LP008, LP009 | Các trường hợp không đủ điều kiện | 0 |
+| LP004, LP005, LP008, LP009, PM001 | Các trường hợp không đủ điều kiện | 0 |

@@ -15,6 +15,7 @@ Private Declare Function MessageBoxW Lib "user32" (ByVal hWnd As Long, ByVal lpT
 
 Private Const FORM_MAIN As String = "frmMain"
 Private Const LOCK_TIMEOUT_MIN As Long = 30
+Private Const FA_TITLES As String = ",LP,"    ' Chuc danh duoc nhan FA (Muc A.II: LP toan thoi gian)
 Private Const MB_OK As Long = 0
 Private Const MB_YESNO As Long = 4
 Private Const MB_ICONERROR As Long = 16
@@ -39,6 +40,7 @@ Private allowRows As Variant   ' (i, 0)=MinFYC, (i,1)=MinRecruits, (i,2)=Allowan
 Private k2Rows As Variant      ' (i, 0)=MinK2, (i,1)=Coef - sap xep giam dan
 Private ctRows As Variant      ' (i, 0)=MinContracts, (i,1)=Coef - sap xep giam dan
 Private holidays As Object     ' Scripting.Dictionary
+Private mErr As String
 
 ' =====================================================================
 ' Tien ich
@@ -47,6 +49,55 @@ Private holidays As Object     ' Scripting.Dictionary
 Public Function T(ByVal key As String) As String
     T = Nz(DLookup("TextValue", "tblText", "TextKey='" & key & "'"), key)
 End Function
+
+' Giai ma chuoi \uXXXX -> Unicode (module chi duoc chua ky tu ASCII)
+Public Function U(ByVal s As String) As String
+    Dim i As Long, out As String
+    i = 1
+    Do While i <= Len(s)
+        If Mid$(s, i, 2) = "\u" Then
+            out = out & ChrW$(CLng("&H" & Mid$(s, i + 2, 4) & "&"))
+            i = i + 6
+        Else
+            out = out & Mid$(s, i, 1)
+            i = i + 1
+        End If
+    Loop
+    U = out
+End Function
+
+Private Sub EnsureText(ByVal key As String, ByVal value As String)
+    If IsNull(DLookup("TextKey", "tblText", "TextKey='" & key & "'")) Then
+        CurrentDb.Execute "INSERT INTO tblText (TextKey, TextValue) VALUES ('" & key & "', " & Q(value) & ")", dbFailOnError
+    End If
+End Sub
+
+' Bo sung nhan cho file FA_App da dung truoc phien ban nay
+Private Sub EnsureTexts()
+    EnsureText "R_NotLP", U("Ch\u1EE9c danh kh\u00F4ng ph\u1EA3i LP (FA ch\u1EC9 \u00E1p d\u1EE5ng LP to\u00E0n th\u1EDDi gian)")
+    EnsureText "E_AgentCols", U("Sheet Agent thi\u1EBFu c\u1ED9t b\u1EAFt bu\u1ED9c: m\u00E3 \u0111\u1EA1i l\u00FD (AgentCode/AGENT_CODE), ng\u00E0y b\u1ED5 nhi\u1EC7m (AppointDate/APPOINTMENT_DATE), m\u00F4 h\u00ECnh (WorkModel/AGENCY_TYPE).")
+    EnsureText "S_AgentsImported", U("\u0110\u00E3 n\u1EA1p danh s\u00E1ch agent, s\u1ED1 d\u00F2ng:")
+End Sub
+
+Private Function BackEndPath() As String
+    Dim c As String
+    c = CurrentDb.TableDefs("tblAgent").Connect
+    BackEndPath = Mid$(c, InStr(1, c, "DATABASE=", vbTextCompare) + 9)
+End Function
+
+' Bo sung cot Title, AgentStatus cho file FA_Data da dung truoc phien ban nay
+Private Sub EnsureAgentColumns()
+    Dim be As DAO.Database, f As DAO.Field, hasTitle As Boolean, hasStatus As Boolean
+    Set be = DBEngine.OpenDatabase(BackEndPath())
+    For Each f In be.TableDefs("tblAgent").Fields
+        If f.Name = "Title" Then hasTitle = True
+        If f.Name = "AgentStatus" Then hasStatus = True
+    Next f
+    If Not hasTitle Then be.Execute "ALTER TABLE tblAgent ADD COLUMN Title TEXT(20)", dbFailOnError
+    If Not hasStatus Then be.Execute "ALTER TABLE tblAgent ADD COLUMN AgentStatus TEXT(20)", dbFailOnError
+    be.Close
+    If Not (hasTitle And hasStatus) Then CurrentDb.TableDefs("tblAgent").RefreshLink
+End Sub
 
 Private Function MsgU(ByVal text As String, Optional ByVal flags As Long = MB_ICONINFO) As Long
     MsgU = MessageBoxW(Application.hWndAccessApp, StrPtr(text), StrPtr(T("AppTitle")), flags)
@@ -321,6 +372,8 @@ Public Function RunFA(ByVal period As String, ByVal ky As Long) As Boolean
         If MsgU(T("Q_Recalc"), MB_YESNO Or MB_ICONQUESTION) <> IDYES Then Exit Function
     End If
 
+    EnsureTexts
+    EnsureAgentColumns
     SetPeriodStatus period, ky, "RUNNING"
     SetStatus T("S_Loading")
     LoadParams
@@ -345,7 +398,7 @@ Public Function RunFA(ByVal period As String, ByVal ky As Long) As Boolean
     db.Execute "DELETE FROM tblFA_Result WHERE Period=" & Q(period) & " AND Ky=" & ky, dbFailOnError
 
     Set rsIn = db.OpenRecordset( _
-        "SELECT i.*, a.AppointDate, a.WorkModel, a.TerminateDate FROM tblFA_Input AS i " & _
+        "SELECT i.*, a.AppointDate, a.WorkModel, a.TerminateDate, a.Title FROM tblFA_Input AS i " & _
         "LEFT JOIN tblAgent AS a ON i.AgentCode = a.AgentCode " & _
         "WHERE i.Period=" & Q(period) & " AND i.Ky=" & ky & " ORDER BY i.AgentCode", dbOpenSnapshot)
     Set rsOut = db.OpenRecordset("tblFA_Result", dbOpenDynaset, dbAppendOnly)
@@ -394,7 +447,11 @@ Public Function RunFA(ByVal period As String, ByVal ky As Long) As Boolean
 
         ' ---- Dieu kien toi thieu ----
         If reason = "" Then
-            If Nz(rsIn!WorkModel, "") <> "FT" Then
+            Dim title As String
+            title = UCase$(Trim$(Nz(rsIn!Title, "")))
+            If Len(title) > 0 And InStr(FA_TITLES, "," & title & ",") = 0 Then
+                reason = T("R_NotLP")
+            ElseIf Nz(rsIn!WorkModel, "") <> "FT" Then
                 reason = T("R_NotFT")
             ElseIf Not IsNull(rsIn!TerminateDate) Then
                 If rsIn!TerminateDate <= monthEnd Then reason = T("R_Terminated")
@@ -542,8 +599,97 @@ Private Function SheetExists(ByVal path As String, ByVal sheet As String) As Boo
 NoSheet:
 End Function
 
+Private Function ToDateOrNull(ByVal v As Variant) As Variant
+    ToDateOrNull = Null
+    If IsEmpty(v) Or IsNull(v) Then Exit Function
+    If VarType(v) = vbDate Then
+        ToDateOrNull = DateValue(v)
+    ElseIf IsNumeric(v) Then
+        If CDbl(v) > 0 Then ToDateOrNull = CDate(CDbl(v))
+    ElseIf IsDate(v) Then
+        ToDateOrNull = DateValue(CDate(v))
+    End If
+End Function
+
+Private Function FindCol(ByVal hdr As Object, ParamArray names() As Variant) As Long
+    Dim n As Variant
+    For Each n In names
+        If hdr.Exists(n) Then
+            FindCol = hdr(n)
+            Exit Function
+        End If
+    Next n
+End Function
+
+' Doc sheet Agent theo ten cot, chap nhan ca file mau cua tool (AgentCode, AgentName...)
+' lan file xuat tu he thong (AGENT_CODE, FULL_NAME, APPOINTMENT_DATE, AGENCY_TYPE, TITLE (Code)...).
+' Ten cot duoc so khop sau khi bo khoang trang va dau gach duoi.
+Private Function ImportAgents(ByVal path As String, ByRef nAgents As Long) As Boolean
+    Dim xl As Object, wb As Object, ws As Object, data As Variant, hdr As Object
+    Dim cCode As Long, cName As Long, cAppoint As Long, cModel As Long, cTerm As Long, cTitle As Long, cStatus As Long
+    Dim r As Long, c As Long, key As String, code As String, rs As DAO.Recordset
+
+    On Error GoTo Fail
+    Set xl = CreateObject("Excel.Application")
+    xl.DisplayAlerts = False
+    Set wb = xl.Workbooks.Open(path, 0, True)
+    On Error Resume Next
+    Set ws = wb.Worksheets("Agent")
+    On Error GoTo Fail
+    If ws Is Nothing Then GoTo Done
+    data = ws.UsedRange.Value
+    If Not IsArray(data) Then GoTo Done
+
+    Set hdr = NewDict()
+    For c = 1 To UBound(data, 2)
+        key = UCase$(Replace(Replace(Trim$(data(1, c) & ""), " ", ""), "_", ""))
+        If Len(key) > 0 And Not hdr.Exists(key) Then hdr(key) = c
+    Next c
+    cCode = FindCol(hdr, "AGENTCODE")
+    cName = FindCol(hdr, "AGENTNAME", "FULLNAME")
+    cAppoint = FindCol(hdr, "APPOINTDATE", "APPOINTMENTDATE")
+    cModel = FindCol(hdr, "WORKMODEL", "AGENCYTYPE")
+    cTerm = FindCol(hdr, "TERMINATEDATE", "TERMINATIONDATE")
+    cTitle = FindCol(hdr, "TITLE", "TITLE(CODE)")
+    cStatus = FindCol(hdr, "AGENTSTATUS")
+    If cCode = 0 Or cAppoint = 0 Or cModel = 0 Then Err.Raise vbObjectError + 10, , T("E_AgentCols")
+
+    Set rs = CurrentDb.OpenRecordset("tblAgent", dbOpenDynaset)
+    For r = 2 To UBound(data, 1)
+        code = Trim$(data(r, cCode) & "")
+        If Len(code) > 0 Then
+            rs.FindFirst "AgentCode=" & Q(code)
+            If rs.NoMatch Then
+                rs.AddNew
+                rs!AgentCode = code
+            Else
+                rs.Edit
+            End If
+            If cName > 0 Then rs!AgentName = Left$(Trim$(data(r, cName) & ""), 100)
+            rs!AppointDate = ToDateOrNull(data(r, cAppoint))
+            rs!WorkModel = Left$(UCase$(Trim$(data(r, cModel) & "")), 2)
+            If cTerm > 0 Then rs!TerminateDate = ToDateOrNull(data(r, cTerm))
+            If cTitle > 0 Then rs!Title = Left$(UCase$(Trim$(data(r, cTitle) & "")), 20)
+            If cStatus > 0 Then rs!AgentStatus = Left$(Trim$(data(r, cStatus) & ""), 20)
+            rs.Update
+            nAgents = nAgents + 1
+        End If
+    Next r
+    rs.Close
+Done:
+    ImportAgents = True
+Cleanup:
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close False
+    If Not xl Is Nothing Then xl.Quit
+    Exit Function
+Fail:
+    mErr = Err.Description
+    Resume Cleanup
+End Function
+
 Public Function BtnImport()
-    Dim path As String, db As DAO.Database, nIn As Long, locked As Long
+    Dim path As String, db As DAO.Database, nIn As Long, locked As Long, nAg As Long
     On Error GoTo Fail
 
     path = PickFile(T("D_PickExcel"), "Excel", "*.xlsx;*.xlsm;*.xls")
@@ -551,14 +697,12 @@ Public Function BtnImport()
     Set db = CurrentDb
     SetStatus T("S_Importing")
 
-    If SheetExists(path, "Agent") Then
-        db.Execute "UPDATE tblAgent AS a INNER JOIN stg_Agent AS s ON a.AgentCode = CStr(s.AgentCode) " & _
-            "SET a.AgentName = s.AgentName, a.AppointDate = s.AppointDate, a.WorkModel = UCase(Trim(s.WorkModel)), " & _
-            "a.TerminateDate = s.TerminateDate", dbFailOnError
-        db.Execute "INSERT INTO tblAgent (AgentCode, AgentName, AppointDate, WorkModel, TerminateDate) " & _
-            "SELECT CStr(s.AgentCode), s.AgentName, s.AppointDate, UCase(Trim(s.WorkModel)), s.TerminateDate " & _
-            "FROM stg_Agent AS s WHERE s.AgentCode Is Not Null AND CStr(s.AgentCode) NOT IN (SELECT AgentCode FROM tblAgent)", dbFailOnError
-        DropTable "stg_Agent"
+    EnsureTexts
+    EnsureAgentColumns
+    If Not ImportAgents(path, nAg) Then
+        SetStatus T("E_Import")
+        MsgU T("E_Import") & vbCrLf & mErr, MB_ICONERROR
+        Exit Function
     End If
 
     If SheetExists(path, "Holiday") Then
@@ -589,8 +733,8 @@ Public Function BtnImport()
         DropTable "stg_FA_Input"
     End If
 
-    SetStatus T("S_Imported") & " " & nIn
-    MsgU T("S_Imported") & " " & nIn
+    SetStatus T("S_AgentsImported") & " " & nAg & " | " & T("S_Imported") & " " & nIn
+    MsgU T("S_AgentsImported") & " " & nAg & vbCrLf & T("S_Imported") & " " & nIn
     Exit Function
 Fail:
     SetStatus T("E_Import")

@@ -27,6 +27,7 @@ QTR_GUAR_ALLOW = 150_000
 QTR_MIN_CT = 6
 QTR_MIN_FYC = 24_000_000
 K2_NA_COEF = 1.0
+FA_TITLES = {"LP"}  # Muc A.II: chi LP toan thoi gian
 MDRT_COEF = 1.2
 
 # (Lua chon, so LP gioi thieu toi thieu, FYC toi thieu, phu cap/ngay)
@@ -89,7 +90,10 @@ def calc(period, agent, inp, holidays, m1=None, qtr_qualified=False):
         day_f = rhu(att_pct / 100 * STD_DAYS, 1)
 
     reason = ""
-    if agent["WorkModel"] != "FT":
+    title = (agent.get("Title") or "").strip().upper()
+    if title and title not in FA_TITLES:
+        reason = "Chức danh không phải LP (FA chỉ áp dụng LP toàn thời gian)"
+    elif agent["WorkModel"] != "FT":
         reason = "Không phải LP toàn thời gian"
     elif (inp["StatusEOM"] or "").upper() == "SE":
         reason = "Tình trạng SE cuối tháng"
@@ -157,7 +161,9 @@ AGENTS = [
     ("LP008", "Đặng Văn H", date(2025, 11, 3), "PT", "LP bán thời gian → không có FA"),
     ("LP009", "Bùi Thị I", date(2026, 4, 1), "FT", "Chưa hoàn tất huấn luyện → không chi"),
     ("LP010", "Đỗ Văn K", date(2025, 8, 1), "FT", "K2 55% → hệ số K2 50%"),
+    ("PM001", "Ngô Thị M", date(2026, 3, 2), "FT", "Chức danh PM → không có FA"),
 ]
+TITLES = {"PM001": "PM"}
 
 INPUTS = {
     "LP001": dict(ActualDays=20, FYC=26_000_000, Contracts=2, Recruits=0, K2Pct=None, MDRTPrev=0, TrainingDone=1, StatusEOM="Active"),
@@ -169,6 +175,7 @@ INPUTS = {
     "LP007": dict(ActualDays=13, FYC=0, Contracts=0, Recruits=0, K2Pct=None, MDRTPrev=0, TrainingDone=1, StatusEOM="Active"),
     "LP008": dict(ActualDays=10, FYC=12_000_000, Contracts=1, Recruits=0, K2Pct=75, MDRTPrev=0, TrainingDone=1, StatusEOM="Active"),
     "LP009": dict(ActualDays=21, FYC=20_000_000, Contracts=2, Recruits=0, K2Pct=None, MDRTPrev=0, TrainingDone=0, StatusEOM="Active"),
+    "PM001": dict(ActualDays=20, FYC=26_000_000, Contracts=2, Recruits=0, K2Pct=None, MDRTPrev=0, TrainingDone=1, StatusEOM="Active"),
     "LP010": dict(ActualDays=19, FYC=18_000_000, Contracts=2, Recruits=1, K2Pct=55, MDRTPrev=0, TrainingDone=1, StatusEOM="Active"),
 }
 
@@ -177,7 +184,7 @@ def main():
     hol = set(HOLIDAYS)
     results = {}
     for code, _, appoint, model, _ in AGENTS:
-        agent = {"AppointDate": appoint, "WorkModel": model}
+        agent = {"AppointDate": appoint, "WorkModel": model, "Title": TITLES.get(code, "LP")}
         results[code] = calc(PERIOD, agent, INPUTS[code], hol)
 
     assert results["LP001"]["FA_Total"] == 10_500_000, results["LP001"]
@@ -186,7 +193,7 @@ def main():
     assert results["LP006"]["FA_Total"] == 4_200_000, results["LP006"]
     assert results["LP007"]["NewGuarPending"] == 3_900_000, results["LP007"]
     assert results["LP010"]["FA_Total"] == 5_000_000, results["LP010"]
-    for c in ("LP004", "LP005", "LP008", "LP009", "LP007"):
+    for c in ("LP004", "LP005", "LP008", "LP009", "LP007", "PM001"):
         assert results[c]["FA_Total"] == 0, (c, results[c])
 
     out = Path(__file__).resolve().parent.parent / "FA_Input_Mau.xlsx"
@@ -224,6 +231,9 @@ def build_workbook(path, results):
         "Sheet Agent – danh sách LP (nhập 1 lần, cập nhật khi có thay đổi)",
         "  AgentCode: mã đại lý | AgentName: họ tên | AppointDate: ngày bổ nhiệm (ngày HĐ đại lý hiệu lực)",
         "  WorkModel: FT = toàn thời gian, PT = bán thời gian | TerminateDate: ngày chấm dứt HĐ (để trống nếu còn hiệu lực)",
+        "  Title: chức danh (LP, PM, PD...). FA chỉ tính cho LP",
+        "  Có thể dán thẳng file xuất hệ thống vào sheet Agent: tool tự nhận cột AGENT_CODE, FULL_NAME, APPOINTMENT_DATE,",
+        "  AGENCY_TYPE, TERMINATION_DATE, TITLE (Code), AGENT_STATUS (các cột khác bỏ qua)",
         "",
         "Sheet Holiday – ngày lễ rơi vào ngày làm việc (để tính số ngày làm việc của tháng)",
         "",
@@ -247,8 +257,8 @@ def build_workbook(path, results):
 
     ws = sheet(
         "Agent",
-        ["AgentCode", "AgentName", "AppointDate", "WorkModel", "TerminateDate"],
-        [(c, n, d, m, None) for c, n, d, m, _ in AGENTS],
+        ["AgentCode", "AgentName", "AppointDate", "WorkModel", "TerminateDate", "Title"],
+        [(c, n, d, m, None, TITLES.get(c, "LP")) for c, n, d, m, _ in AGENTS],
         {1: 26},
     )
     for row in ws.iter_rows(min_row=2, min_col=3, max_col=3):
