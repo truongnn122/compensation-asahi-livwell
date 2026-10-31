@@ -90,6 +90,7 @@ Public Function BtnUpdate()
     Name path As path & ".da_cap_nhat_" & Format$(Now(), "yyyymmdd_hhnnss")
 
     On Error Resume Next
+    Application.Run "FaAfterUpdate"
     ver = Application.Run("FaVersion")
     On Error GoTo 0
     DoCmd.OpenForm "frmMain"

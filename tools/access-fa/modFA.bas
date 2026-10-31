@@ -13,7 +13,7 @@ Private Declare PtrSafe Function MessageBoxW Lib "user32" (ByVal hWnd As LongPtr
 Private Declare Function MessageBoxW Lib "user32" (ByVal hWnd As Long, ByVal lpText As Long, ByVal lpCaption As Long, ByVal uType As Long) As Long
 #End If
 
-Private Const FA_VERSION As String = "2026.10.31-2"
+Private Const FA_VERSION As String = "2026.10.31-3"
 Private Const FORM_MAIN As String = "frmMain"
 Private Const LOCK_TIMEOUT_MIN As Long = 30
 Private Const FA_TITLES As String = ",LP,"    ' Chuc danh duoc nhan FA (Muc A.II: LP toan thoi gian)
@@ -385,7 +385,7 @@ Public Function RunFA(ByVal period As String, ByVal ky As Long) As Boolean
     End If
 
     EnsureTexts
-    EnsureAgentColumns
+    EnsureAgentSchema
     SetPeriodStatus period, ky, "RUNNING"
     SetStatus T("S_Loading")
     LoadParams
@@ -410,8 +410,12 @@ Public Function RunFA(ByVal period As String, ByVal ky As Long) As Boolean
     db.Execute "DELETE FROM tblFA_Result WHERE Period=" & Q(period) & " AND Ky=" & ky, dbFailOnError
 
     Set rsIn = db.OpenRecordset( _
-        "SELECT i.*, a.AppointDate, a.WorkModel, a.TerminateDate, a.Title FROM tblFA_Input AS i " & _
-        "LEFT JOIN tblAgent AS a ON i.AgentCode = a.AgentCode " & _
+        "SELECT i.*, IIf(h.AgentCode Is Null, a.AppointDate, h.AppointDate) AS AppointDate, " & _
+        "IIf(h.AgentCode Is Null, a.WorkModel, h.WorkModel) AS WorkModel, " & _
+        "IIf(h.AgentCode Is Null, a.TerminateDate, h.TerminateDate) AS TerminateDate, " & _
+        "IIf(h.AgentCode Is Null, a.Title, h.Title) AS Title " & _
+        "FROM (tblFA_Input AS i LEFT JOIN tblAgent AS a ON i.AgentCode = a.AgentCode) " & _
+        "LEFT JOIN (SELECT * FROM tblAgentHist WHERE SNAPSHOT_PERIOD=" & Q(period) & ") AS h ON i.AgentCode = h.AgentCode " & _
         "WHERE i.Period=" & Q(period) & " AND i.Ky=" & ky & " ORDER BY i.AgentCode", dbOpenSnapshot)
     Set rsOut = db.OpenRecordset("tblFA_Result", dbOpenDynaset, dbAppendOnly)
 
@@ -611,6 +615,370 @@ Private Function SheetExists(ByVal path As String, ByVal sheet As String) As Boo
 NoSheet:
 End Function
 
+' Cau truc 98 cot cua file danh sach agent xuat tu he thong (Tbl_Agent.xlsx).
+' Moi dong: TieuDeGoc|LanXuatHien|TenTruong|Kieu(T=chu, D=ngay, C/CD=truong FA co san)|TieuDeHienThi
+Private Function AgentSpec() As Variant
+    Dim s As String
+    s = s & "Period|1|SNAPSHOT_PERIOD|T|Period;"
+    s = s & "Channel|1|CHANNEL|T|Channel;"
+    s = s & "REGION_CODE|1|REGION_CODE|T|REGION_CODE;"
+    s = s & "REGION_NAME|1|REGION_NAME|T|REGION_NAME;"
+    s = s & "ZONE_CODE|1|ZONE_CODE|T|ZONE_CODE;"
+    s = s & "ZONE_NAME|1|ZONE_NAME|T|ZONE_NAME;"
+    s = s & "BRANCH_CODE|1|BRANCH_CODE|T|BRANCH_CODE;"
+    s = s & "BRANCH_NAME|1|BRANCH_NAME|T|BRANCH_NAME;"
+    s = s & "SH_CODE|1|SH_CODE|T|SH_CODE;"
+    s = s & "SH_NAME|1|SH_NAME|T|SH_NAME;"
+    s = s & "SD_CODE|1|SD_CODE|T|SD_CODE;"
+    s = s & "SD_NAME|1|SD_NAME|T|SD_NAME;"
+    s = s & "INDIRECT 2_NAME|1|INDIRECT_2_CODE|T|INDIRECT 2_CODE;"
+    s = s & "INDIRECT 2_NAME|2|INDIRECT_2_NAME|T|INDIRECT 2_NAME;"
+    s = s & "INDIRECT 1_CODE|1|INDIRECT_1_CODE|T|INDIRECT 1_CODE;"
+    s = s & "INDIRECT 1_NAME|1|INDIRECT_1_NAME|T|INDIRECT 1_NAME;"
+    s = s & "DIRECT_MANAGER_CODE|1|DIRECT_MANAGER_CODE|T|DIRECT_MANAGER_CODE;"
+    s = s & "DIRECT_MANAGER_NAME|1|DIRECT_MANAGER_NAME|T|DIRECT_MANAGER_NAME;"
+    s = s & "LEADER|1|LEADER|T|LEADER;"
+    s = s & "EXT_REF|1|EXT_REF|T|EXT_REF;"
+    s = s & "AGENT_CODE|1|AgentCode|C|AGENT_CODE;"
+    s = s & "FULL_NAME|1|AgentName|C|FULL_NAME;"
+    s = s & "GENDER|1|GENDER|T|GENDER;"
+    s = s & "TITLE (Code)|1|Title|C|TITLE (Code);"
+    s = s & "AGENT_STATUS|1|AgentStatus|C|AGENT_STATUS;"
+    s = s & "DOB|1|DOB|D|DOB;"
+    s = s & "NATIONAL_ID|1|NATIONAL_ID|T|NATIONAL_ID;"
+    s = s & "ID_ISSUE_DATE|1|ID_ISSUE_DATE|D|ID_ISSUE_DATE;"
+    s = s & "ID_ISSUED_BY|1|ID_ISSUED_BY|T|ID_ISSUED_BY;"
+    s = s & "ID_EXPIRATION_DATE|1|ID_EXPIRATION_DATE|D|ID_EXPIRATION_DATE;"
+    s = s & "OLD_ID_NO|1|OLD_ID_NO|T|OLD_ID_NO;"
+    s = s & "PLACE_OF_BIRTH|1|PLACE_OF_BIRTH|T|PLACE_OF_BIRTH;"
+    s = s & "NATIONALITY|1|NATIONALITY|T|NATIONALITY;"
+    s = s & "MARITAL_STATUS|1|MARITAL_STATUS|T|MARITAL_STATUS;"
+    s = s & "TAX_CODE|1|TAX_CODE|T|TAX_CODE;"
+    s = s & "INCOME_RANGE|1|INCOME_RANGE|T|INCOME_RANGE;"
+    s = s & "EDUCATION|1|EDUCATION|T|EDUCATION;"
+    s = s & "PUBLIC_SECTOR|1|PUBLIC_SECTOR|T|PUBLIC_SECTOR;"
+    s = s & "OCCUPATION|1|OCCUPATION|T|OCCUPATION;"
+    s = s & "EXPERIENCE (Year)|1|EXPERIENCE_YEAR|T|EXPERIENCE (Year);"
+    s = s & "PERM_PROVINCE|1|PERM_PROVINCE|T|PERM_PROVINCE;"
+    s = s & "PERM_WARD|1|PERM_WARD|T|PERM_WARD;"
+    s = s & "PERM_STREET|1|PERM_STREET|T|PERM_STREET;"
+    s = s & "CONTACT_PROVINCE|1|CONTACT_PROVINCE|T|CONTACT_PROVINCE;"
+    s = s & "CONTACT_WARD|1|CONTACT_WARD|T|CONTACT_WARD;"
+    s = s & "CONTACT_STREET|1|CONTACT_STREET|T|CONTACT_STREET;"
+    s = s & "MOBILE|1|MOBILE|T|MOBILE;"
+    s = s & "PERSONAL_EMAIL|1|PERSONAL_EMAIL|T|PERSONAL_EMAIL;"
+    s = s & "COMPANY_EMAIL|1|COMPANY_EMAIL|T|COMPANY_EMAIL;"
+    s = s & "CHANNEL|2|CHANNEL_2|T|CHANNEL (2);"
+    s = s & "AGENCY_TYPE|1|WorkModel|C|AGENCY_TYPE;"
+    s = s & "FIRST_RECRUITER_CODE|1|FIRST_RECRUITER_CODE|T|FIRST_RECRUITER_CODE;"
+    s = s & "REFERRER_CODE|1|REFERRER_CODE|T|REFERRER_CODE;"
+    s = s & "APPOINTMENT_DATE|1|AppointDate|CD|APPOINTMENT_DATE;"
+    s = s & "TERMINATION_DATE|1|TerminateDate|CD|TERMINATION_DATE;"
+    s = s & "FIRST APPOINTMENT_DATE|1|FIRST_APPOINTMENT_DATE|D|FIRST APPOINTMENT_DATE;"
+    s = s & "PROMOTION_DATE|1|PROMOTION_DATE|D|PROMOTION_DATE;"
+    s = s & "DEMOTION_DATE|1|DEMOTION_DATE|D|DEMOTION_DATE;"
+    s = s & "BANK_ACCOUNT_HOLDER|1|BANK_ACCOUNT_HOLDER|T|BANK_ACCOUNT_HOLDER;"
+    s = s & "BANK_ACCOUNT_NO|1|BANK_ACCOUNT_NO|T|BANK_ACCOUNT_NO;"
+    s = s & "BANK_CODE|1|BANK_CODE|T|BANK_CODE;"
+    s = s & "BANK_BRANCH|1|BANK_BRANCH|T|BANK_BRANCH;"
+    s = s & "BANK_BRANCH CODE (Payment)|1|BANK_BRANCH_CODE_PAYMENT|T|BANK_BRANCH CODE (Payment);"
+    s = s & "MOF_CERT_NO|1|MOF_CERT_NO|T|MOF_CERT_NO;"
+    s = s & "MOF_CERT_ISSUE_DATE|1|MOF_CERT_ISSUE_DATE|D|MOF_CERT_ISSUE_DATE;"
+    s = s & "MOF_EXAM_PASS_DATE|1|MOF_EXAM_PASS_DATE|D|MOF_EXAM_PASS_DATE;"
+    s = s & "AVICAD_STATUS|1|AVICAD_STATUS|T|AVICAD_STATUS;"
+    s = s & "AVICAD_DESC|1|AVICAD_DESC|T|AVICAD_DESC;"
+    s = s & "AVICAD_CHECKED_AT|1|AVICAD_CHECKED_AT|D|AVICAD_CHECKED_AT;"
+    s = s & "CONTRACT_NO Agent|1|CONTRACT_NO_AGENT|T|CONTRACT_NO Agent;"
+    s = s & "CONTRACT_TYPE|1|CONTRACT_TYPE_AGENT|T|CONTRACT_TYPE Agent;"
+    s = s & "CONTRACT_NO Leader|1|CONTRACT_NO_LEADER|T|CONTRACT_NO Leader;"
+    s = s & "CONTRACT_TYPE|2|CONTRACT_TYPE_LEADER|T|CONTRACT_TYPE Leader;"
+    s = s & "ESIGN_ENVELOPE_ID (DOCUMENT ID)|1|ESIGN_ENVELOPE_ID_DOCUMENT_ID|T|ESIGN_ENVELOPE_ID (DOCUMENT ID);"
+    s = s & "CONTRACT_SENT_DATE|1|CONTRACT_SENT_DATE|D|CONTRACT_SENT_DATE;"
+    s = s & "CONTRACT_SIGNED_DATE|1|CONTRACT_SIGNED_DATE|D|CONTRACT_SIGNED_DATE;"
+    s = s & "SIGN_AUTH_METHOD|1|SIGN_AUTH_METHOD|T|SIGN_AUTH_METHOD;"
+    s = s & "SIGN_STATUS|1|SIGN_STATUS|T|SIGN_STATUS;"
+    s = s & "CONTRACT_FILE_NAME|1|CONTRACT_FILE_NAME|T|CONTRACT_FILE_NAME;"
+    s = s & "CONTRACT_DMS_REF|1|CONTRACT_DMS_REF|T|CONTRACT_DMS_REF;"
+    s = s & "PROGRAM_CODES|1|PROGRAM_CODES|T|PROGRAM_CODES;"
+    s = s & "COMMIT_1|1|COMMIT_1|T|COMMIT_1;"
+    s = s & "COMMIT_2|1|COMMIT_2|T|COMMIT_2;"
+    s = s & "COMMIT_3|1|COMMIT_3|T|COMMIT_3;"
+    s = s & "COMMIT_4|1|COMMIT_4|T|COMMIT_4;"
+    s = s & "CONSENT_NOTIFY_OPS|1|CONSENT_NOTIFY_OPS|T|CONSENT_NOTIFY_OPS;"
+    s = s & "CONSENT_NOTIFY_PROMO|1|CONSENT_NOTIFY_PROMO|T|CONSENT_NOTIFY_PROMO;"
+    s = s & "PDPD_1_BASIC|1|PDPD_1_BASIC|T|PDPD_1_BASIC;"
+    s = s & "PDPD_2_SENSITIVE|1|PDPD_2_SENSITIVE|T|PDPD_2_SENSITIVE;"
+    s = s & "PDPD_3_SHARE|1|PDPD_3_SHARE|T|PDPD_3_SHARE;"
+    s = s & "CONSENT_DATE|1|CONSENT_DATE|D|CONSENT_DATE;"
+    s = s & "CONSENT_METHOD|1|CONSENT_METHOD|T|CONSENT_METHOD;"
+    s = s & "ONBOARD_COURSE_CODE|1|ONBOARD_COURSE_CODE|T|ONBOARD_COURSE_CODE;"
+    s = s & "ONBOARD_COURSE_DATE|1|ONBOARD_COURSE_DATE|D|ONBOARD_COURSE_DATE;"
+    s = s & "TRAINING_COMPLETED|1|TRAINING_COMPLETED|T|TRAINING_COMPLETED;"
+    s = s & "PRODUCT_AUTH_CODES|1|PRODUCT_AUTH_CODES|T|PRODUCT_AUTH_CODES;"
+    s = s & "DOC_RECEIVED|1|DOC_RECEIVED|T|DOC_RECEIVED;"
+    s = s & "DOC_DMS_REF|1|DOC_DMS_REF|T|DOC_DMS_REF;"
+    AgentSpec = Split(Left$(s, Len(s) - 1), ";")
+End Function
+
+Private Function NormHeader(ByVal h As Variant) As String
+    NormHeader = UCase$(Replace(Replace(Trim$(h & ""), " ", ""), "_", ""))
+End Function
+
+' Them cac cot cua file he thong vao tblAgent (file FA_Data). Chay lai nhieu lan khong sao.
+Private Sub EnsureAgentSchema()
+    Dim be As DAO.Database, have As Object, f As DAO.Field, spec As Variant, p As Variant, i As Long, added As Boolean
+    EnsureAgentColumns
+    Set be = DBEngine.OpenDatabase(BackEndPath())
+    Set have = NewDict()
+    For Each f In be.TableDefs("tblAgent").Fields
+        have(UCase$(f.Name)) = True
+    Next f
+    spec = AgentSpec()
+    For i = 0 To UBound(spec)
+        p = Split(spec(i), "|")
+        If Left$(p(3), 1) <> "C" And Not have.Exists(UCase$(p(2))) Then
+            If p(3) = "D" Then
+                be.Execute "ALTER TABLE tblAgent ADD COLUMN [" & p(2) & "] DATETIME", dbFailOnError
+            Else
+                be.Execute "ALTER TABLE tblAgent ADD COLUMN [" & p(2) & "] TEXT(255)", dbFailOnError
+            End If
+            added = True
+        End If
+    Next i
+    be.TableDefs.Refresh
+    EnsureHistTable be
+    be.Close
+    If added Then CurrentDb.TableDefs("tblAgent").RefreshLink
+    LinkTable "tblAgentHist"
+End Sub
+
+' tblAgentHist: ban chup danh sach agent theo tung thang (SNAPSHOT_PERIOD), cung cau truc voi tblAgent
+Private Sub EnsureHistTable(ByVal be As DAO.Database)
+    Dim td As DAO.TableDef, f As DAO.Field, have As Object, exists As Boolean
+    For Each td In be.TableDefs
+        If td.Name = "tblAgentHist" Then exists = True
+    Next td
+    If Not exists Then
+        be.Execute "SELECT * INTO tblAgentHist FROM tblAgent WHERE 1=0", dbFailOnError
+        be.Execute "CREATE INDEX pkAgentHist ON tblAgentHist (SNAPSHOT_PERIOD, AgentCode) WITH PRIMARY", dbFailOnError
+        Exit Sub
+    End If
+    Set have = NewDict()
+    For Each f In be.TableDefs("tblAgentHist").Fields
+        have(UCase$(f.Name)) = True
+    Next f
+    For Each f In be.TableDefs("tblAgent").Fields
+        If Not have.Exists(UCase$(f.Name)) Then
+            If f.Type = dbDate Then
+                be.Execute "ALTER TABLE tblAgentHist ADD COLUMN [" & f.Name & "] DATETIME", dbFailOnError
+            Else
+                be.Execute "ALTER TABLE tblAgentHist ADD COLUMN [" & f.Name & "] TEXT(255)", dbFailOnError
+            End If
+        End If
+    Next f
+End Sub
+
+Private Sub LinkTable(ByVal name As String)
+    Dim td As DAO.TableDef
+    For Each td In CurrentDb.TableDefs
+        If td.Name = name Then
+            td.RefreshLink
+            Exit Sub
+        End If
+    Next td
+    DoCmd.TransferDatabase acLink, "Microsoft Access", BackEndPath(), acTable, name, name
+End Sub
+
+' Query hien thi tblAgent theo dung thu tu va tieu de cot cua file he thong
+Private Sub BuildAgentQuery()
+    Dim spec As Variant, p As Variant, i As Long, sql As String
+    spec = AgentSpec()
+    For i = 0 To UBound(spec)
+        p = Split(spec(i), "|")
+        sql = sql & IIf(i = 0, "", ", ") & "[" & p(2) & "] AS [" & p(4) & "]"
+    Next i
+    On Error Resume Next
+    CurrentDb.QueryDefs.Delete "qryAgent"
+    On Error GoTo 0
+    CurrentDb.CreateQueryDef "qryAgent", "SELECT " & sql & " FROM tblAgent ORDER BY AgentCode"
+End Sub
+
+Private Function FormExists(ByVal name As String) As Boolean
+    Dim ao As AccessObject
+    For Each ao In CurrentProject.AllForms
+        If ao.Name = name Then FormExists = True
+    Next ao
+End Function
+
+Private Sub DeleteForm(ByVal name As String)
+    If FormExists(name) Then
+        If CurrentProject.AllForms(name).IsLoaded Then DoCmd.Close acForm, name
+        DoCmd.DeleteObject acForm, name
+    End If
+End Sub
+
+Private Function SaveNewForm(ByVal f As Form, ByVal name As String) As String
+    Dim tmp As String
+    tmp = f.Name
+    DoCmd.Close acForm, tmp, acSaveYes
+    DoCmd.Rename name, acForm, tmp
+End Function
+
+Private Function AddCtl(ByVal formName As String, ByVal ctlType As Long, ByVal ctlName As String, _
+                        ByVal l As Long, ByVal t As Long, ByVal w As Long, ByVal h As Long, _
+                        Optional ByVal section As Long = acDetail) As Control
+    Set AddCtl = CreateControl(formName, ctlType, section, , , l, t, w, h)
+    AddCtl.Name = ctlName
+    If ctlType <> acSubform Then AddCtl.FontName = "Segoe UI"
+End Function
+
+' frmAgentList: bang dang datasheet giong file Excel. frmAgent: tim kiem, loc chuc danh, nap/xuat file.
+Private Sub BuildAgentForms()
+    Dim f As Form, c As Control, lb As Control, spec As Variant, p As Variant, i As Long, fn As String
+
+    DeleteForm "frmAgent"
+    DeleteForm "frmAgentList"
+    BuildAgentQuery
+
+    Set f = CreateForm()
+    fn = f.Name
+    f.RecordSource = "qryAgent"
+    f.DefaultView = 2
+    f.Caption = U("Danh s\u00E1ch Agent")
+    spec = AgentSpec()
+    For i = 0 To UBound(spec)
+        p = Split(spec(i), "|")
+        Set c = AddCtl(fn, acTextBox, "c" & i, 2000, 300 * i, 1800, 280)
+        c.ControlSource = "[" & p(4) & "]"
+        If p(3) = "D" Or p(3) = "CD" Then c.Format = "dd/mm/yyyy"
+        Set lb = CreateControl(fn, acLabel, acDetail, c.Name, , 100, 300 * i, 1800, 280)
+        lb.Name = "l" & i
+        lb.Caption = p(4)
+        If p(2) = "AgentName" Or p(3) = "T" And InStr(p(2), "NAME") > 0 Then c.ColumnWidth = 2800 Else c.ColumnWidth = 1700
+    Next i
+    SaveNewForm f, "frmAgentList"
+
+    Set f = CreateForm()
+    fn = f.Name
+    f.Caption = U("Danh s\u00E1ch Agent")
+    f.RecordSelectors = False
+    f.NavigationButtons = False
+    f.DividingLines = False
+    f.ScrollBars = 0
+    f.Width = 16000
+    f.Section(acDetail).Height = 9000
+    f.OnLoad = "=AgentFilter()"
+
+    Set c = AddCtl(fn, acLabel, "lblSearch", 200, 200, 2400, 320)
+    c.Caption = U("T\u00ECm m\u00E3 / h\u1ECD t\u00EAn")
+    Set c = AddCtl(fn, acTextBox, "txtSearch", 2600, 200, 2600, 320)
+    c.AfterUpdate = "=AgentFilter()"
+    Set c = AddCtl(fn, acLabel, "lblTitle", 5500, 200, 1200, 320)
+    c.Caption = U("Ch\u1EE9c danh")
+    Set c = AddCtl(fn, acComboBox, "cboTitle", 6700, 200, 1300, 320)
+    c.RowSourceType = "Table/Query"
+    c.RowSource = "SELECT DISTINCT Title FROM tblAgent WHERE Title Is Not Null ORDER BY Title"
+    c.AfterUpdate = "=AgentFilter()"
+    Set c = AddCtl(fn, acCommandButton, "btnClear", 8200, 180, 1300, 380)
+    c.Caption = U("B\u1ECF l\u1ECDc")
+    c.OnClick = "=AgentClearFilter()"
+    Set c = AddCtl(fn, acCommandButton, "btnImportAgent", 9700, 180, 2600, 380)
+    c.Caption = U("N\u1EA1p file Excel")
+    c.OnClick = "=BtnImport()"
+    Set c = AddCtl(fn, acCommandButton, "btnExportAgent", 12500, 180, 2400, 380)
+    c.Caption = U("Xu\u1EA5t Excel")
+    c.OnClick = "=AgentExport()"
+    Set c = AddCtl(fn, acLabel, "lblCount", 200, 650, 9000, 300)
+    c.Caption = " "
+    c.ForeColor = RGB(31, 78, 121)
+
+    Set c = AddCtl(fn, acSubform, "sfList", 200, 1000, 15600, 7800)
+    c.SourceObject = "Form.frmAgentList"
+    c.HorizontalAnchor = 2
+    c.VerticalAnchor = 2
+    SaveNewForm f, "frmAgent"
+End Sub
+
+Public Function AgentFilter()
+    Dim f As Form, s As String, t As String, w As String, n As Long
+    If Not CurrentProject.AllForms("frmAgent").IsLoaded Then Exit Function
+    Set f = Forms("frmAgent")
+    s = Replace(Trim$(Nz(f!txtSearch, "")), "'", "''")
+    t = Replace(Trim$(Nz(f!cboTitle, "")), "'", "''")
+    If Len(s) > 0 Then w = "([AGENT_CODE] Like '*" & s & "*' Or [FULL_NAME] Like '*" & s & "*')"
+    If Len(t) > 0 Then w = w & IIf(Len(w) > 0, " AND ", "") & "[TITLE (Code)]='" & t & "'"
+    With f!sfList.Form
+        .Filter = w
+        .FilterOn = (Len(w) > 0)
+        With .RecordsetClone
+            If Not .EOF Then .MoveLast
+            n = .RecordCount
+        End With
+    End With
+    f!lblCount.Caption = U("S\u1ED1 agent: ") & n
+End Function
+
+Public Function AgentClearFilter()
+    Forms("frmAgent")!txtSearch = Null
+    Forms("frmAgent")!cboTitle = Null
+    AgentFilter
+End Function
+
+Public Function AgentExport()
+    Dim path As String
+    On Error GoTo Fail
+    With Application.FileDialog(2)
+        .Title = U("Xu\u1EA5t danh s\u00E1ch Agent")
+        .InitialFileName = CurrentProject.Path & "\Agent_" & Format$(Date, "yyyymmdd") & ".xlsx"
+        If Not .Show Then Exit Function
+        path = .SelectedItems(1)
+    End With
+    If LCase$(Right$(path, 5)) <> ".xlsx" Then path = path & ".xlsx"
+    If Dir$(path) <> "" Then Kill path
+    DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel12Xml, "qryAgent", path, True
+    MsgU U("\u0110\u00E3 xu\u1EA5t:") & vbCrLf & path
+    Exit Function
+Fail:
+    MsgU T("E_Export") & vbCrLf & Err.Description, MB_ICONERROR
+End Function
+
+Public Function BtnAgents()
+    If Not FormExists("frmAgent") Then
+        EnsureAgentSchema
+        BuildAgentForms
+    End If
+    DoCmd.OpenForm "frmAgent"
+End Function
+
+Private Sub EnsureMainButton(ByVal ctlName As String, ByVal caption As String, ByVal onClick As String, _
+                             ByVal l As Long, ByVal t As Long)
+    Dim f As Form, c As Control, found As Boolean
+    DoCmd.OpenForm FORM_MAIN, acDesign, , , , acHidden
+    Set f = Forms(FORM_MAIN)
+    For Each c In f.Controls
+        If c.Name = ctlName Then found = True
+    Next c
+    If Not found Then
+        Set c = AddCtl(FORM_MAIN, acCommandButton, ctlName, l, t, 3400, 460)
+        c.Caption = caption
+        c.OnClick = onClick
+    End If
+    DoCmd.Close acForm, FORM_MAIN, acSaveYes
+End Sub
+
+' Goi sau moi lan cap nhat code (nut "Cap nhat tool") va khi dung tool moi:
+' bo sung cot, nhan, form, nut ma phien ban moi can. Khong xoa du lieu.
+Public Function FaAfterUpdate()
+    Dim i As Long
+    For i = Forms.Count - 1 To 0 Step -1
+        DoCmd.Close acForm, Forms(i).Name
+    Next i
+    EnsureTexts
+    EnsureAgentSchema
+    BuildAgentForms
+    EnsureMainButton "btnAgents", U("Danh s\u00E1ch Agent"), "=BtnAgents()", 5000, 4440
+End Function
+
 Private Function ToDateOrNull(ByVal v As Variant) As Variant
     ToDateOrNull = Null
     If IsEmpty(v) Or IsNull(v) Then Exit Function
@@ -626,8 +994,8 @@ End Function
 Private Function FindCol(ByVal hdr As Object, ParamArray names() As Variant) As Long
     Dim n As Variant
     For Each n In names
-        If hdr.Exists(n) Then
-            FindCol = hdr(n)
+        If hdr.Exists(n & "#1") Then
+            FindCol = hdr(n & "#1")
             Exit Function
         End If
     Next n
@@ -640,6 +1008,8 @@ Private Function ImportAgents(ByVal path As String, ByRef nAgents As Long) As Bo
     Dim xl As Object, wb As Object, ws As Object, data As Variant, hdr As Object
     Dim cCode As Long, cName As Long, cAppoint As Long, cModel As Long, cTerm As Long, cTitle As Long, cStatus As Long
     Dim r As Long, c As Long, key As String, code As String, rs As DAO.Recordset
+    Dim seen As Object, spec As Variant, p As Variant, extraCol() As Long
+    Dim cPeriod As Long, periods As Object, pk As Variant
 
     On Error GoTo Fail
     Set xl = CreateObject("Excel.Application")
@@ -653,9 +1023,13 @@ Private Function ImportAgents(ByVal path As String, ByRef nAgents As Long) As Bo
     If Not IsArray(data) Then GoTo Done
 
     Set hdr = NewDict()
+    Set seen = NewDict()
     For c = 1 To UBound(data, 2)
-        key = UCase$(Replace(Replace(Trim$(data(1, c) & ""), " ", ""), "_", ""))
-        If Len(key) > 0 And Not hdr.Exists(key) Then hdr(key) = c
+        key = NormHeader(data(1, c))
+        If Len(key) > 0 Then
+            seen(key) = seen(key) + 1
+            hdr(key & "#" & seen(key)) = c
+        End If
     Next c
     cCode = FindCol(hdr, "AGENTCODE")
     cName = FindCol(hdr, "AGENTNAME", "FULLNAME")
@@ -664,7 +1038,24 @@ Private Function ImportAgents(ByVal path As String, ByRef nAgents As Long) As Bo
     cTerm = FindCol(hdr, "TERMINATEDATE", "TERMINATIONDATE")
     cTitle = FindCol(hdr, "TITLE", "TITLE(CODE)")
     cStatus = FindCol(hdr, "AGENTSTATUS")
+    cPeriod = FindCol(hdr, "PERIOD")
+    Set periods = NewDict()
     If cCode = 0 Or cAppoint = 0 Or cModel = 0 Then Err.Raise vbObjectError + 10, , T("E_AgentCols")
+
+    ' Cac cot con lai cua file he thong (CCCD, ngan hang, tuyen quan ly...)
+    spec = AgentSpec()
+    ReDim extraCol(UBound(spec))
+    For c = 0 To UBound(spec)
+        p = Split(spec(c), "|")
+        If Left$(p(3), 1) <> "C" Then
+            key = NormHeader(p(0)) & "#" & p(1)
+            If hdr.Exists(key) Then
+                extraCol(c) = hdr(key)
+            ElseIf hdr.Exists(NormHeader(p(4)) & "#1") Then
+                extraCol(c) = hdr(NormHeader(p(4)) & "#1")
+            End If
+        End If
+    Next c
 
     Set rs = CurrentDb.OpenRecordset("tblAgent", dbOpenDynaset)
     For r = 2 To UBound(data, 1)
@@ -683,11 +1074,33 @@ Private Function ImportAgents(ByVal path As String, ByRef nAgents As Long) As Bo
             If cTerm > 0 Then rs!TerminateDate = ToDateOrNull(data(r, cTerm))
             If cTitle > 0 Then rs!Title = Left$(UCase$(Trim$(data(r, cTitle) & "")), 20)
             If cStatus > 0 Then rs!AgentStatus = Left$(Trim$(data(r, cStatus) & ""), 20)
+            For c = 0 To UBound(spec)
+                If extraCol(c) > 0 Then
+                    p = Split(spec(c), "|")
+                    If p(3) = "D" Then
+                        rs.Fields(p(2)) = ToDateOrNull(data(r, extraCol(c)))
+                    ElseIf Len(Trim$(data(r, extraCol(c)) & "")) = 0 Then
+                        rs.Fields(p(2)) = Null
+                    Else
+                        rs.Fields(p(2)) = Left$(Trim$(data(r, extraCol(c)) & ""), 255)
+                    End If
+                End If
+            Next c
             rs.Update
             nAgents = nAgents + 1
+            If cPeriod > 0 Then
+                key = Trim$(data(r, cPeriod) & "")
+                If Len(key) > 0 Then periods(key) = True
+            End If
         End If
     Next r
     rs.Close
+
+    ' Luu ban chup tung thang: nap lai cung thang thi ghi de dung thang do
+    For Each pk In periods.Keys
+        CurrentDb.Execute "DELETE FROM tblAgentHist WHERE SNAPSHOT_PERIOD=" & Q(CStr(pk)), dbFailOnError
+        CurrentDb.Execute "INSERT INTO tblAgentHist SELECT * FROM tblAgent WHERE SNAPSHOT_PERIOD=" & Q(CStr(pk)), dbFailOnError
+    Next pk
 Done:
     ImportAgents = True
 Cleanup:
@@ -711,7 +1124,7 @@ Public Function BtnImport()
     SetStatus T("S_Importing")
 
     EnsureTexts
-    EnsureAgentColumns
+    EnsureAgentSchema
     If Not ImportAgents(path, nAg) Then
         SetStatus T("E_Import")
         MsgU T("E_Import") & vbCrLf & mErr, MB_ICONERROR
@@ -746,6 +1159,10 @@ Public Function BtnImport()
         DropTable "stg_FA_Input"
     End If
 
+    If CurrentProject.AllForms("frmAgent").IsLoaded Then
+        Forms("frmAgent")!sfList.Form.Requery
+        AgentFilter
+    End If
     SetStatus T("S_AgentsImported") & " " & nAg & " | " & T("S_Imported") & " " & nIn
     MsgU T("S_AgentsImported") & " " & nAg & vbCrLf & T("S_Imported") & " " & nIn
     Exit Function

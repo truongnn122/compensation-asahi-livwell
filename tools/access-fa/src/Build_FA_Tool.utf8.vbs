@@ -239,6 +239,9 @@ Sub BuildFrontEnd()
         Err.Clear
     End If
 
+    acc.Run "FaAfterUpdate"
+    Check "Tạo bảng/form Danh sách Agent"
+
     acc.CloseCurrentDatabase
     Check "Đóng FA_App.accdb"
 End Sub

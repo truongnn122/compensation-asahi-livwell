@@ -38,7 +38,20 @@ Code nằm trong `FA_App.accdb`, dữ liệu nằm trong `FA_Data.accdb`, nên c
 2. Đặt con trỏ chuột vào dòng `Sub CaiDatCapNhat`, bấm **F5**. Form chính sẽ có thêm 2 nút.
 3. Bấm **Cập nhật tool** để nạp `modFA.bas` mới.
 
-## 4. Quy trình mỗi kỳ
+## 4. Danh sách Agent (nạp hàng tháng)
+
+- Bấm **Danh sách Agent** trên form chính. Bảng hiện đủ 98 cột theo đúng thứ tự file xuất từ hệ thống, có ô tìm theo mã hoặc họ tên, lọc theo chức danh, nút **Nạp file Excel** và **Xuất Excel**.
+- Mỗi tháng nạp file xuất hệ thống, chỉ cần sheet tên `Agent` và có cột `Period`:
+  - `tblAgent` được cập nhật thành thông tin **mới nhất**: agent mới được thêm vào, agent đã có được cập nhật.
+  - `tblAgentHist` lưu **bản chụp riêng của từng tháng** theo `Period`. Nạp lại cùng một tháng thì chỉ ghi đè tháng đó.
+- Tính FA tháng nào thì tool dùng chức danh, ngày bổ nhiệm và FT/PT **của đúng tháng đó** trong `tblAgentHist`. Nếu chưa nạp file của tháng đó thì dùng bản mới nhất.
+- Cột trùng tên trong file được đặt tên riêng:
+  - `INDIRECT 2_NAME` lần thứ nhất → `INDIRECT 2_CODE`;
+  - `CHANNEL` → `CHANNEL (2)`;
+  - `CONTRACT_TYPE` → `CONTRACT_TYPE Agent` / `CONTRACT_TYPE Leader`.
+- File có thông tin cá nhân (CCCD, tài khoản ngân hàng): nên đặt mật khẩu cho `FA_Data.accdb` (*File → Encrypt with Password*) và giới hạn quyền truy cập thư mục.
+
+## 5. Quy trình mỗi kỳ
 
 1. **Nhập dữ liệu từ Excel** theo đúng mẫu `FA_Input_Mau.xlsx` (sheet `Agent`, `Holiday`, `FA_Input`).
    - Sheet `Agent` nhận được **cả file xuất từ hệ thống**: chỉ cần dán nguyên file xuất vào sheet `Agent`. Tool tự tìm các cột `AGENT_CODE`, `FULL_NAME`, `APPOINTMENT_DATE`, `AGENCY_TYPE` (FT/PT), `TERMINATION_DATE`, `TITLE (Code)`, `AGENT_STATUS`, còn các cột khác được bỏ qua và không lưu vào tool.
@@ -52,7 +65,7 @@ Code nằm trong `FA_App.accdb`, dữ liệu nằm trong `FA_Data.accdb`, nên c
 - Khi một người đang chạy tính một tháng/kỳ, người khác bị chặn trong 30 phút.
 - Không cho tính lại kỳ trước nếu kỳ sau của cùng tháng đã có kết quả.
 
-## 5. Công thức đã cài
+## 6. Công thức đã cài
 
 `FA = Phụ cấp/ngày × Hệ số ngày làm việc × %Hệ số K2 × %Hệ số MDRT × %Hệ số HĐ`
 
@@ -77,7 +90,7 @@ Code nằm trong `FA_App.accdb`, dữ liệu nằm trong `FA_Data.accdb`, nên c
 
 Mọi mức tiền, tỷ lệ và ngưỡng nằm trong **Bảng tham số chính sách**. Khi chính sách thay đổi, chỉ cần sửa bảng, không phải sửa code.
 
-## 6. Giả định cần anh/chị xác nhận
+## 7. Giả định cần anh/chị xác nhận
 
 | # | Điểm văn bản chưa rõ | Cách tool đang xử lý |
 |---|---|---|
@@ -90,7 +103,7 @@ Mọi mức tiền, tỷ lệ và ngưỡng nằm trong **Bảng tham số chín
 | 7 | Ngưỡng 50.000đ cộng dồn (mục D.aa) áp trên tổng thu nhập | **Chưa áp dụng** vì tool chỉ tính FA |
 | 8 | PM/PD có được nhận FA không | **Không**: mục A.II chỉ nêu "LP toàn thời gian". Danh sách chức danh được nhận FA nằm ở hằng số `FA_TITLES` trong `modFA.bas` |
 
-## 7. Kiểm tra
+## 8. Kiểm tra
 
 Kết quả tính bằng file mẫu, tháng 10/2026, kỳ 1, phải khớp sheet `KetQua_KyVong`, cụ thể:
 
