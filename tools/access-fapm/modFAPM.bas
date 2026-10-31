@@ -14,7 +14,7 @@ Private Declare PtrSafe Function MessageBoxW Lib "user32" (ByVal hWnd As LongPtr
 Private Declare Function MessageBoxW Lib "user32" (ByVal hWnd As Long, ByVal lpText As Long, ByVal lpCaption As Long, ByVal uType As Long) As Long
 #End If
 
-Private Const FA_VERSION As String = "2026.11.01-1"
+Private Const FA_VERSION As String = "2026.11.01-2"
 Private Const FORM_MAIN As String = "frmMain"
 Private Const LOCK_TIMEOUT_MIN As Long = 30
 Private Const FA_TITLES As String = ",PM,PD,"    ' Chuc danh duoc nhan FA nhom truc tiep (Muc A)
@@ -56,11 +56,6 @@ End Function
 ' Ten module de nut 'Cap nhat tool' (modUpdate) biet nap file nao
 Public Function FaModuleName() As String
     FaModuleName = "modFAPM"
-End Function
-
-' Ten module de nut 'Cap nhat tool' (modUpdate) biet nap file nao
-Public Function FaModuleName() As String
-    FaModuleName = "modFA"
 End Function
 
 ' Sao luu file du lieu truoc thao tac ghi (dung Application.Run de khong phu thuoc modUpdate khi bien dich)

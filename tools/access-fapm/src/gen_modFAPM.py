@@ -61,13 +61,11 @@ s = must_replace(s, "' TINH PHU CAP CO DINH (FA) - ALL/AD/2210-005, Phu luc 1, M
                  "' TINH PHU CAP CO DINH (FA) CHO PM/PD - ALL/AD/2210-006, Phu luc 1, Muc A.I\n"
                  "' File nay duoc SINH TU DONG tu access-fa/modFA.bas boi src/gen_modFAPM.py - sua o do roi sinh lai.\n"
                  "' Logic doi chieu: kiem-tra/fapm_reference.py")
-s = re.sub(r'Private Const FA_VERSION As String = "[^"]+"', 'Private Const FA_VERSION As String = "2026.11.01-1"', s)
+s = re.sub(r'Private Const FA_VERSION As String = "[^"]+"', 'Private Const FA_VERSION As String = "2026.11.01-2"', s)
 s = must_replace(s, 'Private Const FA_TITLES As String = ",LP,"    \' Chuc danh duoc nhan FA (Muc A.II: LP toan thoi gian)',
                  'Private Const FA_TITLES As String = ",PM,PD,"    \' Chuc danh duoc nhan FA nhom truc tiep (Muc A)')
-s = must_replace(s, "Public Function FaVersion() As String\n    FaVersion = FA_VERSION\nEnd Function\n",
-                 "Public Function FaVersion() As String\n    FaVersion = FA_VERSION\nEnd Function\n\n"
-                 "' Ten module de nut 'Cap nhat tool' (modUpdate) biet nap file nao\n"
-                 "Public Function FaModuleName() As String\n    FaModuleName = \"modFAPM\"\nEnd Function\n")
+s = must_replace(s, 'Public Function FaModuleName() As String\n    FaModuleName = "modFA"\nEnd Function\n',
+                 'Public Function FaModuleName() As String\n    FaModuleName = "modFAPM"\nEnd Function\n')
 
 # ---- tham so ----
 s = must_replace(s, """Private pStdDays As Double
