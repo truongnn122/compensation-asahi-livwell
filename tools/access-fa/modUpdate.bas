@@ -89,7 +89,11 @@ Public Function BtnUpdate()
     On Error GoTo Fail
     path = CurrentProject.Path & "\modFA.bas"
     If Dir$(path) = "" Then
-        Msg UX(M_UPD_MISSING) & vbCrLf & CurrentProject.Path, 48
+        ' Khong co file code moi: chi chay lai buoc bo sung bang/form (sua cau truc)
+        If BackupData(True) = "" Then Exit Function
+        Application.Run "FaAfterUpdate"
+        DoCmd.OpenForm "frmMain"
+        Msg UX(M_UPD_DONE) & " " & Application.Run("FaVersion")
         Exit Function
     End If
     If Msg(UX(M_UPD_CONFIRM), 4 Or 32) <> 6 Then Exit Function

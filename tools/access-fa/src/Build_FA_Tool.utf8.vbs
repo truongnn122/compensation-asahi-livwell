@@ -226,7 +226,11 @@ Sub BuildFrontEnd()
     End If
 
     acc.Run "FaAfterUpdate"
-    Check "Tạo bảng/form Danh sách Agent"
+    If Err.Number <> 0 Then
+        MsgBox "Dựng xong nhưng bước tạo bảng Tbl_Agent/Tbl_Attendance và form Danh sách Agent bị lỗi:" & vbCrLf & _
+               Err.Description & vbCrLf & vbCrLf & "Mở FA_App.accdb, bấm nút 'Cập nhật tool' để chạy lại bước này.", 48, "Dựng tool FA"
+        Err.Clear
+    End If
 
     acc.CloseCurrentDatabase
     Check "Đóng FA_App.accdb"
